@@ -117,7 +117,7 @@ class LastspitzeManager:
         if state is None or state.state in ("unknown", "unavailable"):
             return
         try:
-            power_w = float(state.state)
+            power_w = max(0.0, float(state.state))  # Einspeisung (negativ) zählt nicht als Bezug
         except ValueError:
             return
         now = dt_util.utcnow()
@@ -133,7 +133,7 @@ class LastspitzeManager:
         new_state = event.data.get("new_state")
         if new_state is not None:
             try:
-                self._last_power_w = float(new_state.state)
+                self._last_power_w = max(0.0, float(new_state.state))
             except ValueError:
                 pass
         self._check_warning_throttle()
@@ -162,7 +162,7 @@ class LastspitzeManager:
         if state is None:
             return
         try:
-            power_w = float(state.state)
+            power_w = max(0.0, float(state.state))  # Einspeisung (negativ) zählt nicht als Bezug
         except ValueError:
             return
 

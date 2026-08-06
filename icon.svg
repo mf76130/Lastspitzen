@@ -1,0 +1,13 @@
+<svg width="256" height="256" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Lastspitze Logo</title>
+  <desc>Rundes Badge-Logo mit stilisierter Lastspitzenkurve und Blitz-Akzent</desc>
+  <circle cx="340" cy="340" r="300" fill="#14213d"/>
+  <circle cx="340" cy="340" r="272" fill="none" stroke="#f5a623" stroke-width="2" opacity="0.35"/>
+  <line x1="150" y1="470" x2="530" y2="470" stroke="#3d4f7a" stroke-width="2" opacity="0.6"/>
+  <line x1="150" y1="410" x2="530" y2="410" stroke="#3d4f7a" stroke-width="1" opacity="0.3"/>
+  <line x1="150" y1="530" x2="530" y2="530" stroke="#3d4f7a" stroke-width="1" opacity="0.3"/>
+  <path d="M180,470 L250,470 L300,340 L340,470 L380,220 L420,470 L470,470" fill="none" stroke="#f5a623" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="380" cy="220" r="16" fill="#f5a623"/>
+  <circle cx="380" cy="220" r="16" fill="none" stroke="#14213d" stroke-width="3"/>
+  <polygon points="392,175 366,232 384,232 372,275 410,215 390,215" fill="#ffffff"/>
+</svg>

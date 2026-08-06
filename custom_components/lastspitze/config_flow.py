@@ -45,7 +45,7 @@ def _entities_schema(defaults: dict) -> vol.Schema:
         {
             vol.Required(
                 CONF_POWER_SENSOR, default=defaults.get(CONF_POWER_SENSOR)
-            ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="power")),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Required(
                 CONF_WALLBOX_AMP, default=defaults.get(CONF_WALLBOX_AMP)
             ): EntitySelector(EntitySelectorConfig(domain="number")),
@@ -118,14 +118,11 @@ class LastspitzeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return LastspitzeOptionsFlow(config_entry)
+        return LastspitzeOptionsFlow()
 
 
 class LastspitzeOptionsFlow(config_entries.OptionsFlow):
     """Erlaubt nachträgliches Ändern von Entities/Schwellwerten ohne Neu-Setup."""
-
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:

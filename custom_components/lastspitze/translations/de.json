@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Lastspitze einrichten",
-        "description": "Wähle den Leistungssensor deines Hausanschlusses (in W) sowie die Entities zur Steuerung deiner Wallbox.",
+        "description": "Wähle den Leistungssensor deines Hausanschlusses (Wert in W – device_class egal) sowie die Entities zur Steuerung deiner Wallbox.",
         "data": {
           "name": "Name",
           "power_sensor": "Leistungssensor Hausanschluss (W)",

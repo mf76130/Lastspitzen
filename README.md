@@ -9,6 +9,12 @@ Ersetzt das ursprüngliche YAML-Package (`utility_meter`, `template`,
 kein manuelles YAML mehr nötig, Entity-Namen frei über den Options-Flow
 anpassbar.
 
+## Logo
+
+`icon.svg` im Repo-Root enthält das Logo. Für die HACS-Store-Ansicht
+in `icon.png` (256×256) umwandeln und ebenfalls im Repo-Root ablegen –
+HACS erkennt `icon.png`/`logo.png` automatisch.
+
 ## Installation über HACS (Custom Repository)
 
 1. HACS → drei Punkte oben rechts → *Benutzerdefinierte Repositories*
