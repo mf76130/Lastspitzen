@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Lastspitze",
+        "description": "Pick the power sensor for your grid connection (in W) and the entities used to control your wallbox.",
+        "data": {
+          "name": "Name",
+          "power_sensor": "Grid connection power sensor (W)",
+          "wallbox_amp_entity": "Wallbox charging current control (number)",
+          "wallbox_max_amp_entity": "Wallbox maximum charging current (number)",
+          "above_threshold_w": "Warning threshold (W)",
+          "above_duration_s": "Duration above threshold (s)",
+          "below_threshold_w": "Recovery threshold (W)",
+          "below_duration_s": "Duration below threshold (s)",
+          "min_amp": "Minimum charging current (A)",
+          "reduce_step_a": "Reduction step (A)",
+          "notify_service": "Notify service (e.g. notify.pushover)",
+          "notify_target": "Notify target (optional)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This combination is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lastspitze settings",
+        "data": {
+          "power_sensor": "Grid connection power sensor (W)",
+          "wallbox_amp_entity": "Wallbox charging current control (number)",
+          "wallbox_max_amp_entity": "Wallbox maximum charging current (number)",
+          "above_threshold_w": "Warning threshold (W)",
+          "above_duration_s": "Duration above threshold (s)",
+          "below_threshold_w": "Recovery threshold (W)",
+          "below_duration_s": "Duration below threshold (s)",
+          "min_amp": "Minimum charging current (A)",
+          "reduce_step_a": "Reduction step (A)",
+          "notify_service": "Notify service",
+          "notify_target": "Notify target (optional)"
+        }
+      }
+    }
+  }
+}

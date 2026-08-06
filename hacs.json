@@ -1,0 +1,6 @@
+{
+  "name": "Lastspitze",
+  "render_readme": true,
+  "domains": ["sensor"],
+  "homeassistant": "2024.4.0"
+}

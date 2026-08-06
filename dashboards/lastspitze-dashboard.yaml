@@ -1,0 +1,34 @@
+title: Lastspitze
+views:
+  - title: Lastspitze
+    icon: mdi:transmission-tower
+    cards:
+      - type: gauge
+        entity: sensor.lastspitze_aktuell
+        name: Aktuelle Lastspitze (letzte 15 Min)
+        min: 0
+        max: 15
+        severity:
+          green: 0
+          yellow: 8
+          red: 12
+      - type: entities
+        title: Monatswerte
+        entities:
+          - entity: sensor.lastspitze_monat_max
+            name: Lastspitze diesen Monat
+          - entity: sensor.lastspitze_letzter_monat
+            name: Lastspitze Vormonat
+      - type: history-graph
+        title: Verlauf heute
+        hours_to_show: 24
+        entities:
+          - entity: sensor.lastspitze_aktuell
+      - type: statistics-graph
+        title: Monatliche Lastspitzen (Verlauf)
+        chart_type: bar
+        period: month
+        stat_types:
+          - max
+        entities:
+          - sensor.lastspitze_aktuell

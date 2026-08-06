@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lastspitze einrichten",
+        "description": "Wähle den Leistungssensor deines Hausanschlusses (in W) sowie die Entities zur Steuerung deiner Wallbox.",
+        "data": {
+          "name": "Name",
+          "power_sensor": "Leistungssensor Hausanschluss (W)",
+          "wallbox_amp_entity": "Ladestrom-Steuerung Wallbox (number)",
+          "wallbox_max_amp_entity": "Maximaler Ladestrom Wallbox (number)",
+          "above_threshold_w": "Warnschwelle (W)",
+          "above_duration_s": "Dauer über Schwelle (s)",
+          "below_threshold_w": "Rückkehr-Schwelle (W)",
+          "below_duration_s": "Dauer unter Schwelle (s)",
+          "min_amp": "Minimaler Ladestrom (A)",
+          "reduce_step_a": "Reduktionsschritt (A)",
+          "notify_service": "Notify-Service (z.B. notify.pushover)",
+          "notify_target": "Notify-Ziel (optional)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Diese Kombination ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lastspitze-Einstellungen",
+        "data": {
+          "power_sensor": "Leistungssensor Hausanschluss (W)",
+          "wallbox_amp_entity": "Ladestrom-Steuerung Wallbox (number)",
+          "wallbox_max_amp_entity": "Maximaler Ladestrom Wallbox (number)",
+          "above_threshold_w": "Warnschwelle (W)",
+          "above_duration_s": "Dauer über Schwelle (s)",
+          "below_threshold_w": "Rückkehr-Schwelle (W)",
+          "below_duration_s": "Dauer unter Schwelle (s)",
+          "min_amp": "Minimaler Ladestrom (A)",
+          "reduce_step_a": "Reduktionsschritt (A)",
+          "notify_service": "Notify-Service",
+          "notify_target": "Notify-Ziel (optional)"
+        }
+      }
+    }
+  }
+}
