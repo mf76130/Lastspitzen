@@ -27,7 +27,29 @@
       },
       "wallboxes": {
         "title": "Wallbox-Entities",
-        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung und Entity mit dem Maximalstrom."
+        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung und Entity mit dem Maximalstrom.",
+        "data": {
+          "amp_entity_0": "Wallbox 1 – Aktueller Ladestrom (number)",
+          "max_amp_entity_0": "Wallbox 1 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_1": "Wallbox 2 – Aktueller Ladestrom (number)",
+          "max_amp_entity_1": "Wallbox 2 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_2": "Wallbox 3 – Aktueller Ladestrom (number)",
+          "max_amp_entity_2": "Wallbox 3 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_3": "Wallbox 4 – Aktueller Ladestrom (number)",
+          "max_amp_entity_3": "Wallbox 4 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_4": "Wallbox 5 – Aktueller Ladestrom (number)",
+          "max_amp_entity_4": "Wallbox 5 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_5": "Wallbox 6 – Aktueller Ladestrom (number)",
+          "max_amp_entity_5": "Wallbox 6 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_6": "Wallbox 7 – Aktueller Ladestrom (number)",
+          "max_amp_entity_6": "Wallbox 7 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_7": "Wallbox 8 – Aktueller Ladestrom (number)",
+          "max_amp_entity_7": "Wallbox 8 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_8": "Wallbox 9 – Aktueller Ladestrom (number)",
+          "max_amp_entity_8": "Wallbox 9 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_9": "Wallbox 10 – Aktueller Ladestrom (number)",
+          "max_amp_entity_9": "Wallbox 10 – Maximal zulässiger Ladestrom (number)"
+        }
       }
     },
     "abort": {
@@ -59,7 +81,29 @@
       },
       "wallboxes": {
         "title": "Wallbox-Entities",
-        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung und Entity mit dem Maximalstrom."
+        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung und Entity mit dem Maximalstrom.",
+        "data": {
+          "amp_entity_0": "Wallbox 1 – Aktueller Ladestrom (number)",
+          "max_amp_entity_0": "Wallbox 1 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_1": "Wallbox 2 – Aktueller Ladestrom (number)",
+          "max_amp_entity_1": "Wallbox 2 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_2": "Wallbox 3 – Aktueller Ladestrom (number)",
+          "max_amp_entity_2": "Wallbox 3 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_3": "Wallbox 4 – Aktueller Ladestrom (number)",
+          "max_amp_entity_3": "Wallbox 4 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_4": "Wallbox 5 – Aktueller Ladestrom (number)",
+          "max_amp_entity_4": "Wallbox 5 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_5": "Wallbox 6 – Aktueller Ladestrom (number)",
+          "max_amp_entity_5": "Wallbox 6 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_6": "Wallbox 7 – Aktueller Ladestrom (number)",
+          "max_amp_entity_6": "Wallbox 7 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_7": "Wallbox 8 – Aktueller Ladestrom (number)",
+          "max_amp_entity_7": "Wallbox 8 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_8": "Wallbox 9 – Aktueller Ladestrom (number)",
+          "max_amp_entity_8": "Wallbox 9 – Maximal zulässiger Ladestrom (number)",
+          "amp_entity_9": "Wallbox 10 – Aktueller Ladestrom (number)",
+          "max_amp_entity_9": "Wallbox 10 – Maximal zulässiger Ladestrom (number)"
+        }
       }
     }
   }
