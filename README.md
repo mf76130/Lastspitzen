@@ -22,6 +22,13 @@ HACS erkennt `icon.png`/`logo.png` automatisch.
 3. „Lastspitze" installieren, Home Assistant neu starten
 4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Lastspitze"**
 
+## Icon / Logo
+
+Seit Home Assistant 2026.3 liefert die Integration ihr Icon direkt mit
+(`custom_components/lastspitze/brand/icon.png` + `logo.png`, je in normal
+und `@2x`). Kein Pull Request beim `home-assistant/brands`-Repo mehr nötig –
+das Icon erscheint automatisch, sobald diese Version installiert ist.
+
 ## Wallbox-Steuerung (optional, beliebig viele)
 
 Im Setup gibt es einen Schalter **„Wallbox-Steuerung aktivieren"**:
