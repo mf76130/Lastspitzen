@@ -1,12 +1,12 @@
 {
   "domain": "lastspitze",
   "name": "Lastspitze",
-  "codeowners": ["@mf76130"],
+  "codeowners": ["@dein-github-name"],
   "config_flow": true,
-  "documentation": "https://github.com/mf76130/ha-lastspitze",
+  "documentation": "https://github.com/dein-github-name/ha-lastspitze",
   "integration_type": "hub",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/mf76130/ha-lastspitze/issues",
+  "issue_tracker": "https://github.com/dein-github-name/ha-lastspitze/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

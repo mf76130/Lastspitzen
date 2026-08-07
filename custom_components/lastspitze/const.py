@@ -4,8 +4,11 @@ DOMAIN = "lastspitze"
 
 CONF_NAME = "name"
 CONF_POWER_SENSOR = "power_sensor"
-CONF_WALLBOX_AMP = "wallbox_amp_entity"
-CONF_WALLBOX_MAX_AMP = "wallbox_max_amp_entity"
+CONF_ENABLE_WALLBOX = "enable_wallbox_control"
+CONF_WALLBOX_COUNT = "wallbox_count"
+CONF_WALLBOXES = "wallboxes"
+CONF_WB_AMP = "amp_entity"
+CONF_WB_MAX_AMP = "max_amp_entity"
 CONF_ABOVE_THRESHOLD = "above_threshold_w"
 CONF_ABOVE_DURATION = "above_duration_s"
 CONF_BELOW_THRESHOLD = "below_threshold_w"
@@ -16,6 +19,8 @@ CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_TARGET = "notify_target"
 
 DEFAULT_NAME = "Lastspitze"
+DEFAULT_ENABLE_WALLBOX = True
+DEFAULT_WALLBOX_COUNT = 1
 DEFAULT_ABOVE_THRESHOLD = 9000
 DEFAULT_ABOVE_DURATION = 120
 DEFAULT_BELOW_THRESHOLD = 8000

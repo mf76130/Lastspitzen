@@ -17,8 +17,10 @@ from .const import (
     DOMAIN,
     QUARTER_MINUTES,
     CONF_POWER_SENSOR,
-    CONF_WALLBOX_AMP,
-    CONF_WALLBOX_MAX_AMP,
+    CONF_ENABLE_WALLBOX,
+    CONF_WALLBOXES,
+    CONF_WB_AMP,
+    CONF_WB_MAX_AMP,
     CONF_ABOVE_THRESHOLD,
     CONF_ABOVE_DURATION,
     CONF_BELOW_THRESHOLD,
@@ -49,8 +51,8 @@ class LastspitzeManager:
         opts = {**entry.data, **entry.options}
 
         self.power_sensor = opts[CONF_POWER_SENSOR]
-        self.amp_entity = opts[CONF_WALLBOX_AMP]
-        self.max_amp_entity = opts[CONF_WALLBOX_MAX_AMP]
+        self.enable_wallbox = bool(opts.get(CONF_ENABLE_WALLBOX, True))
+        self.wallboxes = opts.get(CONF_WALLBOXES, [])  # list of {"amp_entity", "max_amp_entity"}
         self.above_threshold = float(opts.get(CONF_ABOVE_THRESHOLD, DEFAULT_ABOVE_THRESHOLD))
         self.above_duration = int(opts.get(CONF_ABOVE_DURATION, DEFAULT_ABOVE_DURATION))
         self.below_threshold = float(opts.get(CONF_BELOW_THRESHOLD, DEFAULT_BELOW_THRESHOLD))
@@ -158,6 +160,8 @@ class LastspitzeManager:
         self._update_sensors()
 
     def _check_warning_throttle(self) -> None:
+        if not self.enable_wallbox or not self.wallboxes:
+            return
         state = self.hass.states.get(self.power_sensor)
         if state is None:
             return
@@ -188,53 +192,58 @@ class LastspitzeManager:
 
     async def _async_throttle(self, power_w: float) -> None:
         top_device = self._find_top_consumer()
-        amp_state = self.hass.states.get(self.amp_entity)
-        try:
-            current_amp = int(float(amp_state.state))
-        except (ValueError, AttributeError, TypeError):
-            current_amp = self.min_amp
-        new_amp = max(self.min_amp, current_amp - self.reduce_step)
+        changes = []
+        for wb in self.wallboxes:
+            amp_entity = wb[CONF_WB_AMP]
+            amp_state = self.hass.states.get(amp_entity)
+            try:
+                current_amp = int(float(amp_state.state))
+            except (ValueError, AttributeError, TypeError):
+                continue
+            if current_amp > self.min_amp:
+                new_amp = max(self.min_amp, current_amp - self.reduce_step)
+                await self.hass.services.async_call(
+                    "number", "set_value",
+                    {"entity_id": amp_entity, "value": new_amp},
+                    blocking=True,
+                )
+                changes.append(f"{amp_entity}: {current_amp} A → {new_amp} A")
+            else:
+                changes.append(f"{amp_entity}: bereits am Minimum ({self.min_amp} A)")
 
         message = (
             f"Gesamtbezug seit {self.above_duration // 60} Min über "
             f"{self.above_threshold / 1000:.1f} kW ({power_w:.0f} W).\n"
             f"Größter Verbraucher gerade: {top_device}.\n"
+            + "\n".join(changes)
         )
-        if current_amp > self.min_amp:
-            message += f"Ladestrom Auto wird von {current_amp} A auf {new_amp} A reduziert."
-        else:
-            message += (
-                f"Auto lädt bereits mit Minimalstrom ({self.min_amp} A), "
-                "Lastspitze bleibt eventuell bestehen."
-            )
-
         await self._notify("⚠️ Lastspitze über Schwellwert", message)
 
-        if current_amp > self.min_amp:
-            await self.hass.services.async_call(
-                "number", "set_value",
-                {"entity_id": self.amp_entity, "value": new_amp},
-                blocking=True,
-            )
-
     async def _async_restore(self) -> None:
-        amp_state = self.hass.states.get(self.amp_entity)
-        max_state = self.hass.states.get(self.max_amp_entity)
-        try:
-            current_amp = int(float(amp_state.state))
-            max_amp = int(float(max_state.state))
-        except (ValueError, AttributeError, TypeError):
-            return
-        if current_amp < max_amp:
-            await self.hass.services.async_call(
-                "number", "set_value",
-                {"entity_id": self.amp_entity, "value": max_amp},
-                blocking=True,
-            )
+        changes = []
+        for wb in self.wallboxes:
+            amp_entity = wb[CONF_WB_AMP]
+            max_amp_entity = wb[CONF_WB_MAX_AMP]
+            amp_state = self.hass.states.get(amp_entity)
+            max_state = self.hass.states.get(max_amp_entity)
+            try:
+                current_amp = int(float(amp_state.state))
+                max_amp = int(float(max_state.state))
+            except (ValueError, AttributeError, TypeError):
+                continue
+            if current_amp < max_amp:
+                await self.hass.services.async_call(
+                    "number", "set_value",
+                    {"entity_id": amp_entity, "value": max_amp},
+                    blocking=True,
+                )
+                changes.append(f"{amp_entity}: wieder auf Maximum ({max_amp} A)")
+
+        if changes:
             await self._notify(
                 "✅ Lastspitze vorbei",
                 f"Verbrauch seit {self.below_duration // 60} Min unter "
-                f"{self.below_threshold / 1000:.1f} kW – Ladestrom wieder auf Maximum ({max_amp} A) gesetzt.",
+                f"{self.below_threshold / 1000:.1f} kW.\n" + "\n".join(changes),
             )
 
     def _find_top_consumer(self) -> str:
@@ -268,7 +277,26 @@ class LastspitzeManager:
             _LOGGER.warning("Konnte Benachrichtigung nicht senden: %s", err)
 
 
+def _migrate_legacy_wallbox(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Alte Einzel-Wallbox-Konfiguration (vor 1.1.0) automatisch in die neue Listenform überführen."""
+    if CONF_WALLBOXES in entry.data:
+        return  # bereits im neuen Format
+    legacy_amp = entry.data.get("wallbox_amp_entity")
+    legacy_max = entry.data.get("wallbox_max_amp_entity")
+    if not legacy_amp or not legacy_max:
+        return  # nichts zu migrieren (z.B. Neuinstallation)
+
+    new_data = dict(entry.data)
+    new_data.pop("wallbox_amp_entity", None)
+    new_data.pop("wallbox_max_amp_entity", None)
+    new_data[CONF_ENABLE_WALLBOX] = True
+    new_data[CONF_WALLBOXES] = [{CONF_WB_AMP: legacy_amp, CONF_WB_MAX_AMP: legacy_max}]
+    hass.config_entries.async_update_entry(entry, data=new_data)
+    _LOGGER.info("Lastspitze: bestehende Wallbox-Konfiguration automatisch auf neues Format migriert.")
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    _migrate_legacy_wallbox(hass, entry)
     manager = LastspitzeManager(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = manager
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

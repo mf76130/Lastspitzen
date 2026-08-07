@@ -22,6 +22,19 @@ HACS erkennt `icon.png`/`logo.png` automatisch.
 3. „Lastspitze" installieren, Home Assistant neu starten
 4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Lastspitze"**
 
+## Wallbox-Steuerung (optional, beliebig viele)
+
+Im Setup gibt es einen Schalter **„Wallbox-Steuerung aktivieren"**:
+
+- **Aus** → die Integration liefert nur die drei Lastspitze-Sensoren, es wird nichts gedrosselt oder benachrichtigt.
+- **Ein** → danach fragt der Assistent, wie viele Wallboxen du hast, und für jede die beiden
+  Entities (Ladestrom-Steuerung + Maximalstrom). **Alle Wallboxen werden bei Überschreitung
+  gleichzeitig und gleich behandelt** (gleicher Reduktionsschritt, gleiches Minimum, gleiche
+  Wiederherstellung).
+
+Bestehende Installationen mit nur einer Wallbox werden beim ersten Start nach dem Update
+automatisch ins neue Format migriert – keine manuelle Aktion nötig.
+
 ## Setup-Assistent fragt ab
 
 | Feld | Bedeutung | Entspricht im alten YAML |
