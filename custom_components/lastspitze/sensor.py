@@ -1,6 +1,8 @@
 """Sensor-Entities für die Lastspitze-Integration."""
 from __future__ import annotations
 
+import json
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -42,14 +44,19 @@ class _BaseLastspitzeSensor(RestoreEntity, SensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         last = await self.async_get_last_state()
-        if last is not None and last.state not in ("unknown", "unavailable"):
-            try:
-                self._restore(float(last.state))
-            except ValueError:
-                pass
+        if last is not None:
+            if last.state not in ("unknown", "unavailable"):
+                try:
+                    self._restore(float(last.state))
+                except ValueError:
+                    pass
+            self._restore_extra(last.attributes)
 
     def _restore(self, value: float) -> None:
         """In Unterklassen überschreiben."""
+
+    def _restore_extra(self, attributes: dict) -> None:
+        """Optional in Unterklassen überschreiben, für zusätzliche Attribute."""
 
 
 class LastspitzeAktuellSensor(_BaseLastspitzeSensor):
@@ -64,8 +71,24 @@ class LastspitzeAktuellSensor(_BaseLastspitzeSensor):
     def native_value(self):
         return self.manager.current_kw
 
+    @property
+    def extra_state_attributes(self):
+        # Nachverfolgung, welche Wallboxen die Integration selbst gedrosselt hat -
+        # übersteht so auch einen HA-Neustart (via RestoreEntity).
+        return {"throttled_wallboxes": json.dumps(self.manager._throttled_by_us)}
+
     def _restore(self, value: float) -> None:
         self.manager.current_kw = value
+
+    def _restore_extra(self, attributes: dict) -> None:
+        raw = attributes.get("throttled_wallboxes")
+        if not raw:
+            return
+        try:
+            data = json.loads(raw)
+            self.manager._throttled_by_us.update({k: int(v) for k, v in data.items()})
+        except (ValueError, TypeError):
+            pass
 
 
 class LastspitzeMonatMaxSensor(_BaseLastspitzeSensor):

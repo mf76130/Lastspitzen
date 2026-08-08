@@ -29,6 +29,21 @@ Seit Home Assistant 2026.3 liefert die Integration ihr Icon direkt mit
 und `@2x`). Kein Pull Request beim `home-assistant/brands`-Repo mehr nötig –
 das Icon erscheint automatisch, sobald diese Version installiert ist.
 
+## Manuelle Wallbox-Eingriffe
+
+Die Integration merkt sich intern, welche Wallboxen sie selbst gedrosselt hat.
+Ändert der Nutzer den Ladestrom während einer aktiven Drosselung manuell
+(z.B. in der go-eCharger-App), erkennt die Integration das an der
+Zustandsänderung und **fasst diese Wallbox danach nicht mehr automatisch
+an** – auch nicht, wenn der Verbrauch später unter die Rückkehr-Schwelle
+fällt. Erst die nächste eigene Drosselung (neue Lastspitze) übernimmt die
+Wallbox wieder in die automatische Steuerung.
+
+Diese Information übersteht auch einen Neustart: sie wird als Attribut
+`throttled_wallboxes` am Sensor `sensor.lastspitze_aktuell` gespeichert und
+über Home Assistants eingebaute `RestoreEntity`-Funktion automatisch
+wiederhergestellt – genau wie die Monatswerte.
+
 ## Wallbox-Steuerung (optional, beliebig viele)
 
 Im Setup gibt es einen Schalter **„Wallbox-Steuerung aktivieren"**:

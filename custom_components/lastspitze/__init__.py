@@ -79,6 +79,11 @@ class LastspitzeManager:
         self._unsub = []
         self.sensors = []
 
+        # merkt sich, welche Wallboxen die Integration selbst gedrosselt hat
+        # (amp_entity -> zuletzt von UNS gesetzter Wert). Nur diese werden
+        # später wieder automatisch hochgesetzt.
+        self._throttled_by_us: dict[str, int] = {}
+
     def register_sensor(self, sensor) -> None:
         self.sensors.append(sensor)
 
@@ -102,6 +107,13 @@ class LastspitzeManager:
                 self.hass, [self.power_sensor], self._async_power_changed
             )
         )
+        amp_entities = [wb[CONF_WB_AMP] for wb in self.wallboxes]
+        if amp_entities:
+            self._unsub.append(
+                async_track_state_change_event(
+                    self.hass, amp_entities, self._async_wallbox_amp_changed
+                )
+            )
 
     async def async_unload(self) -> None:
         for unsub in self._unsub:
@@ -139,6 +151,27 @@ class LastspitzeManager:
             except ValueError:
                 pass
         self._check_warning_throttle()
+
+    @callback
+    def _async_wallbox_amp_changed(self, event) -> None:
+        """Erkennt manuelle Eingriffe: weicht der neue Wert von dem ab, den WIR
+        zuletzt gesetzt haben, hat der Nutzer selbst geregelt -> nicht mehr
+        automatisch anfassen, bis die nächste eigene Drosselung stattfindet."""
+        entity_id = event.data.get("entity_id")
+        new_state = event.data.get("new_state")
+        if entity_id not in self._throttled_by_us or new_state is None:
+            return
+        try:
+            new_value = int(float(new_state.state))
+        except (ValueError, TypeError):
+            return
+        if new_value != self._throttled_by_us[entity_id]:
+            _LOGGER.info(
+                "Lastspitze: %s wurde manuell auf %s A geändert, wird nicht mehr automatisch zurückgesetzt.",
+                entity_id, new_value,
+            )
+            self._throttled_by_us.pop(entity_id, None)
+            self._update_sensors()
 
     @callback
     def _async_quarter_boundary(self, now) -> None:
@@ -207,9 +240,11 @@ class LastspitzeManager:
                     {"entity_id": amp_entity, "value": new_amp},
                     blocking=True,
                 )
+                self._throttled_by_us[amp_entity] = new_amp
                 changes.append(f"{amp_entity}: {current_amp} A → {new_amp} A")
             else:
                 changes.append(f"{amp_entity}: bereits am Minimum ({self.min_amp} A)")
+        self._update_sensors()
 
         message = (
             f"Gesamtbezug seit {self.above_duration // 60} Min über "
@@ -223,6 +258,8 @@ class LastspitzeManager:
         changes = []
         for wb in self.wallboxes:
             amp_entity = wb[CONF_WB_AMP]
+            if amp_entity not in self._throttled_by_us:
+                continue  # von uns nicht gedrosselt (oder Nutzer hat manuell übernommen) -> in Ruhe lassen
             max_amp_entity = wb[CONF_WB_MAX_AMP]
             amp_state = self.hass.states.get(amp_entity)
             max_state = self.hass.states.get(max_amp_entity)
@@ -238,6 +275,8 @@ class LastspitzeManager:
                     blocking=True,
                 )
                 changes.append(f"{amp_entity}: wieder auf Maximum ({max_amp} A)")
+            self._throttled_by_us.pop(amp_entity, None)
+        self._update_sensors()
 
         if changes:
             await self._notify(
