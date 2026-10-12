@@ -30,6 +30,9 @@ from .const import (
     CONF_BELOW_DURATION,
     CONF_MIN_AMP,
     CONF_REDUCE_STEP,
+    CONF_CALC_REDUCTION,
+    CONF_PHASES,
+    CONF_VOLTAGE,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_NAME,
@@ -41,6 +44,9 @@ from .const import (
     DEFAULT_BELOW_DURATION,
     DEFAULT_MIN_AMP,
     DEFAULT_REDUCE_STEP,
+    DEFAULT_CALC_REDUCTION,
+    DEFAULT_PHASES,
+    DEFAULT_VOLTAGE,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -111,6 +117,20 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
                 CONF_REDUCE_STEP, default=defaults.get(CONF_REDUCE_STEP, DEFAULT_REDUCE_STEP)
             ): NumberSelector(
                 NumberSelectorConfig(min=1, max=16, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="A")
+            ),
+            vol.Required(
+                CONF_CALC_REDUCTION,
+                default=defaults.get(CONF_CALC_REDUCTION, DEFAULT_CALC_REDUCTION),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_PHASES, default=defaults.get(CONF_PHASES, DEFAULT_PHASES)
+            ): NumberSelector(
+                NumberSelectorConfig(min=1, max=3, step=1, mode=NumberSelectorMode.BOX)
+            ),
+            vol.Required(
+                CONF_VOLTAGE, default=defaults.get(CONF_VOLTAGE, DEFAULT_VOLTAGE)
+            ): NumberSelector(
+                NumberSelectorConfig(min=100, max=260, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="V")
             ),
         }
     )

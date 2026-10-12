@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -27,6 +28,9 @@ from .const import (
     CONF_BELOW_DURATION,
     CONF_MIN_AMP,
     CONF_REDUCE_STEP,
+    CONF_CALC_REDUCTION,
+    CONF_PHASES,
+    CONF_VOLTAGE,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_ABOVE_THRESHOLD,
@@ -35,6 +39,9 @@ from .const import (
     DEFAULT_BELOW_DURATION,
     DEFAULT_MIN_AMP,
     DEFAULT_REDUCE_STEP,
+    DEFAULT_CALC_REDUCTION,
+    DEFAULT_PHASES,
+    DEFAULT_VOLTAGE,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -59,6 +66,9 @@ class LastspitzeManager:
         self.below_duration = int(opts.get(CONF_BELOW_DURATION, DEFAULT_BELOW_DURATION))
         self.min_amp = int(opts.get(CONF_MIN_AMP, DEFAULT_MIN_AMP))
         self.reduce_step = int(opts.get(CONF_REDUCE_STEP, DEFAULT_REDUCE_STEP))
+        self.calc_reduction = bool(opts.get(CONF_CALC_REDUCTION, DEFAULT_CALC_REDUCTION))
+        self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
+        self.voltage = float(opts.get(CONF_VOLTAGE, DEFAULT_VOLTAGE))
         self.notify_service = opts.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
         self.notify_target = opts.get(CONF_NOTIFY_TARGET, "")
 
@@ -225,16 +235,32 @@ class LastspitzeManager:
 
     async def _async_throttle(self, power_w: float) -> None:
         top_device = self._find_top_consumer()
-        changes = []
+
+        # aktuelle Ströme aller Wallboxen einlesen
+        currents: dict[str, int] = {}
         for wb in self.wallboxes:
             amp_entity = wb[CONF_WB_AMP]
             amp_state = self.hass.states.get(amp_entity)
             try:
-                current_amp = int(float(amp_state.state))
+                currents[amp_entity] = int(float(amp_state.state))
             except (ValueError, AttributeError, TypeError):
                 continue
+
+        # Reduktion pro Wallbox bestimmen
+        step = self.reduce_step
+        if self.calc_reduction:
+            excess_w = power_w - self.above_threshold
+            reducible = [e for e, a in currents.items() if a > self.min_amp]
+            if excess_w > 0 and reducible:
+                w_per_amp = self.voltage * self.phases
+                total_amp = math.ceil(excess_w / w_per_amp)
+                # gleichmäßig auf alle reduzierbaren Wallboxen verteilen (aufrunden)
+                step = max(1, math.ceil(total_amp / len(reducible)))
+
+        changes = []
+        for amp_entity, current_amp in currents.items():
             if current_amp > self.min_amp:
-                new_amp = max(self.min_amp, current_amp - self.reduce_step)
+                new_amp = max(self.min_amp, current_amp - step)
                 await self.hass.services.async_call(
                     "number", "set_value",
                     {"entity_id": amp_entity, "value": new_amp},

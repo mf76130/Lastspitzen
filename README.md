@@ -29,6 +29,18 @@ Seit Home Assistant 2026.3 liefert die Integration ihr Icon direkt mit
 und `@2x`). Kein Pull Request beim `home-assistant/brands`-Repo mehr nötig –
 das Icon erscheint automatisch, sobald diese Version installiert ist.
 
+## Berechnete Reduktion
+
+Ist **„Reduktion berechnen"** aktiv (Standard), senkt die Integration den Ladestrom nicht um
+einen festen Schritt, sondern um so viele Ampere, dass der Gesamtbezug rechnerisch unter die
+Warnschwelle fällt:
+
+`Überschuss (W) = Bezug − Warnschwelle` → `Ampere = Überschuss ÷ (Spannung × Phasen)`
+
+Bei mehreren Wallboxen wird die nötige Reduktion gleichmäßig verteilt (aufgerundet, mind. 1 A),
+nie unter den minimalen Ladestrom. Ist die Option aus, gilt der feste Reduktionsschritt.
+Hinweis: Die Rechnung geht davon aus, dass die Wallbox tatsächlich den eingestellten Strom zieht.
+
 ## Manuelle Wallbox-Eingriffe
 
 Die Integration merkt sich intern, welche Wallboxen sie selbst gedrosselt hat.

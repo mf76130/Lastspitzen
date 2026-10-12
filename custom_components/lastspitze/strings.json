@@ -18,11 +18,14 @@
       },
       "wallbox_count": {
         "title": "Wallboxen",
-        "description": "Wie viele Wallboxen sollen gemeinsam gedrosselt/wiederhergestellt werden?",
+        "description": "Wie viele Wallboxen sollen gemeinsam gedrosselt/wiederhergestellt werden? Bei aktiver Berechnung wird der Ladestrom um so viele Ampere gesenkt, dass der Bezug unter die Warnschwelle fällt (ansonsten feste Schrittweite).",
         "data": {
           "wallbox_count": "Anzahl Wallboxen",
           "min_amp": "Minimaler Ladestrom (A)",
-          "reduce_step_a": "Reduktionsschritt (A)"
+          "reduce_step_a": "Reduktionsschritt (A)",
+          "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
+          "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
+          "voltage_v": "Netzspannung pro Phase (V)"
         }
       },
       "wallboxes": {
@@ -76,7 +79,10 @@
         "data": {
           "wallbox_count": "Anzahl Wallboxen",
           "min_amp": "Minimaler Ladestrom (A)",
-          "reduce_step_a": "Reduktionsschritt (A)"
+          "reduce_step_a": "Reduktionsschritt (A)",
+          "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
+          "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
+          "voltage_v": "Netzspannung pro Phase (V)"
         }
       },
       "wallboxes": {
