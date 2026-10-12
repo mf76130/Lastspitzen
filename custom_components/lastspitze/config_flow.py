@@ -112,6 +112,11 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
             ): NumberSelector(
                 NumberSelectorConfig(min=1, max=16, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="A")
             ),
+            vol.Required(
+                CONF_PHASES, default=defaults.get(CONF_PHASES, DEFAULT_PHASES)
+            ): NumberSelector(
+                NumberSelectorConfig(min=1, max=3, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="Phasen")
+            ),
         }
     )
 

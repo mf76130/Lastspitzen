@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -27,6 +28,7 @@ from .const import (
     CONF_BELOW_DURATION,
     CONF_MIN_AMP,
     CONF_REDUCE_STEP,
+    CONF_PHASES,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_ABOVE_THRESHOLD,
@@ -35,6 +37,7 @@ from .const import (
     DEFAULT_BELOW_DURATION,
     DEFAULT_MIN_AMP,
     DEFAULT_REDUCE_STEP,
+    DEFAULT_PHASES,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -59,6 +62,7 @@ class LastspitzeManager:
         self.below_duration = int(opts.get(CONF_BELOW_DURATION, DEFAULT_BELOW_DURATION))
         self.min_amp = int(opts.get(CONF_MIN_AMP, DEFAULT_MIN_AMP))
         self.reduce_step = int(opts.get(CONF_REDUCE_STEP, DEFAULT_REDUCE_STEP))
+        self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
         self.notify_service = opts.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
         self.notify_target = opts.get(CONF_NOTIFY_TARGET, "")
 
@@ -226,6 +230,22 @@ class LastspitzeManager:
     async def _async_throttle(self, power_w: float) -> None:
         top_device = self._find_top_consumer()
         changes = []
+
+        # Leistung pro Ampere Ladestrom: 230 V * Phasenzahl (cos phi ~ 1 bei E-Autos)
+        w_per_amp = 230.0 * self.phases
+        # Wie viel Watt sind wir über dem Zielwert?
+        excess_w = power_w - self.above_threshold
+        # Nötige Reduktion in Ampere, auf ganze Ampere aufgerundet,
+        # damit man SOFORT unter den Zielwert kommt.
+        needed_amp = math.ceil(excess_w / w_per_amp) if excess_w > 0 else 0
+        _LOGGER.info(
+            "Lastspitze: %.0f W ueber Schwellwert -> %.0f W/A, benoetigte Reduktion: %d A",
+            excess_w, w_per_amp, needed_amp,
+        )
+
+        # Reduktion auf die Wallboxen verteilen (erste Wallbox zuerst),
+        # bis die benoetigte Ampere-Zahl erreicht ist.
+        remaining = needed_amp
         for wb in self.wallboxes:
             amp_entity = wb[CONF_WB_AMP]
             amp_state = self.hass.states.get(amp_entity)
@@ -233,17 +253,22 @@ class LastspitzeManager:
                 current_amp = int(float(amp_state.state))
             except (ValueError, AttributeError, TypeError):
                 continue
-            if current_amp > self.min_amp:
-                new_amp = max(self.min_amp, current_amp - self.reduce_step)
-                await self.hass.services.async_call(
-                    "number", "set_value",
-                    {"entity_id": amp_entity, "value": new_amp},
-                    blocking=True,
-                )
-                self._throttled_by_us[amp_entity] = new_amp
-                changes.append(f"{amp_entity}: {current_amp} A → {new_amp} A")
-            else:
+            if current_amp <= self.min_amp:
                 changes.append(f"{amp_entity}: bereits am Minimum ({self.min_amp} A)")
+                continue
+            if remaining <= 0:
+                changes.append(f"{amp_entity}: keine Reduktion mehr noetig")
+                continue
+            step = min(remaining, current_amp - self.min_amp)
+            new_amp = current_amp - step
+            await self.hass.services.async_call(
+                "number", "set_value",
+                {"entity_id": amp_entity, "value": new_amp},
+                blocking=True,
+            )
+            self._throttled_by_us[amp_entity] = new_amp
+            remaining -= step
+            changes.append(f"{amp_entity}: {current_amp} A → {new_amp} A (-{step} A)")
         self._update_sensors()
 
         message = (

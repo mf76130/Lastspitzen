@@ -13,7 +13,8 @@
           "below_duration_s": "Dauer unter Schwelle (s)",
           "notify_service": "Notify-Service (z.B. notify.pushover)",
           "notify_target": "Notify-Ziel (optional)",
-          "enable_wallbox_control": "Wallbox-Steuerung aktivieren"
+          "enable_wallbox_control": "Wallbox-Steuerung aktivieren",
+          "phases": "Phasenzahl beim Laden (1 oder 3)"
         }
       },
       "wallbox_count": {
@@ -22,7 +23,8 @@
         "data": {
           "wallbox_count": "Anzahl Wallboxen",
           "min_amp": "Minimaler Ladestrom (A)",
-          "reduce_step_a": "Reduktionsschritt (A)"
+          "reduce_step_a": "Reduktionsschritt (A)",
+          "phases": "Phasenzahl beim Laden (1 oder 3)"
         }
       },
       "wallboxes": {
@@ -48,7 +50,8 @@
           "amp_entity_8": "Wallbox 9 – Aktueller Ladestrom (number)",
           "max_amp_entity_8": "Wallbox 9 – Maximal zulässiger Ladestrom (number)",
           "amp_entity_9": "Wallbox 10 – Aktueller Ladestrom (number)",
-          "max_amp_entity_9": "Wallbox 10 – Maximal zulässiger Ladestrom (number)"
+          "max_amp_entity_9": "Wallbox 10 – Maximal zulässiger Ladestrom (number)",
+          "phases": "Phasenzahl beim Laden (1 oder 3)"
         }
       }
     },
