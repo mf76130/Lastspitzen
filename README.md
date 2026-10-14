@@ -41,6 +41,19 @@ Bei mehreren Wallboxen wird die nötige Reduktion gleichmäßig verteilt (aufger
 nie unter den minimalen Ladestrom. Ist die Option aus, gilt der feste Reduktionsschritt.
 Hinweis: Die Rechnung geht davon aus, dass die Wallbox tatsächlich den eingestellten Strom zieht.
 
+### Leistungssensor pro Wallbox (optional, empfohlen)
+
+Gibst du bei einer Wallbox zusätzlich einen Leistungssensor (W) an, geht die Integration genauer vor:
+
+- Nur Wallboxen, die gerade laden (> 300 W), werden gedrosselt. Eine Wallbox ohne Fahrzeug bekommt keinen Anteil mehr.
+- Die Reduktion bezieht sich auf den **tatsächlich gezogenen** Strom, nicht auf den eingestellten. Zieht ein Auto nur 8 A bei 16 A Einstellung, bringt eine Senkung von 16 auf 13 A nichts – die Integration rechnet deshalb ab 8 A.
+- Ein **Sicherheitsaufschlag** (Standard 10 %) auf die nötige Entlastung verhindert, dass es knapp nicht reicht.
+- Reichen die Wallboxen rechnerisch nicht aus (z. B. beide schon fast am Minimum), steht das in der Benachrichtigung.
+
+Ohne Leistungssensor gilt wie bisher der eingestellte Strom und alle Wallboxen werden gleich behandelt.
+
+In der Meldung „größter Verbraucher" werden Summen- und Nennwerte (Namen mit „Gesamt", „Total", „Rated", „Alle Phasen") ausgelassen.
+
 ## Manuelle Wallbox-Eingriffe
 
 Die Integration merkt sich intern, welche Wallboxen sie selbst gedrosselt hat.

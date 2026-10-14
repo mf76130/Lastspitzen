@@ -24,6 +24,7 @@ from .const import (
     CONF_WALLBOXES,
     CONF_WB_AMP,
     CONF_WB_MAX_AMP,
+    CONF_WB_POWER,
     CONF_ABOVE_THRESHOLD,
     CONF_ABOVE_DURATION,
     CONF_BELOW_THRESHOLD,
@@ -33,6 +34,7 @@ from .const import (
     CONF_CALC_REDUCTION,
     CONF_PHASES,
     CONF_VOLTAGE,
+    CONF_SAFETY_MARGIN,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_NAME,
@@ -47,6 +49,7 @@ from .const import (
     DEFAULT_CALC_REDUCTION,
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
+    DEFAULT_SAFETY_MARGIN,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -132,6 +135,12 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
             ): NumberSelector(
                 NumberSelectorConfig(min=100, max=260, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="V")
             ),
+            vol.Required(
+                CONF_SAFETY_MARGIN,
+                default=defaults.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN),
+            ): NumberSelector(
+                NumberSelectorConfig(min=0, max=50, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="%")
+            ),
         }
     )
 
@@ -147,17 +156,27 @@ def _wallboxes_schema(count: int, existing: list) -> vol.Schema:
         fields[
             vol.Required(f"{CONF_WB_MAX_AMP}_{i}", default=prev.get(CONF_WB_MAX_AMP))
         ] = EntitySelector(EntitySelectorConfig(domain="number"))
+        fields[
+            vol.Optional(
+                f"{CONF_WB_POWER}_{i}",
+                description={"suggested_value": prev.get(CONF_WB_POWER)},
+            )
+        ] = EntitySelector(EntitySelectorConfig(domain="sensor"))
     return vol.Schema(fields)
 
 
 def _collect_wallboxes(user_input: dict, count: int) -> list:
-    return [
-        {
+    wallboxes = []
+    for i in range(count):
+        wb = {
             CONF_WB_AMP: user_input[f"{CONF_WB_AMP}_{i}"],
             CONF_WB_MAX_AMP: user_input[f"{CONF_WB_MAX_AMP}_{i}"],
         }
-        for i in range(count)
-    ]
+        power = user_input.get(f"{CONF_WB_POWER}_{i}")
+        if power:
+            wb[CONF_WB_POWER] = power
+        wallboxes.append(wb)
+    return wallboxes
 
 
 class LastspitzeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

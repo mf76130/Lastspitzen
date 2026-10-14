@@ -22,6 +22,7 @@ from .const import (
     CONF_WALLBOXES,
     CONF_WB_AMP,
     CONF_WB_MAX_AMP,
+    CONF_WB_POWER,
     CONF_ABOVE_THRESHOLD,
     CONF_ABOVE_DURATION,
     CONF_BELOW_THRESHOLD,
@@ -31,6 +32,7 @@ from .const import (
     CONF_CALC_REDUCTION,
     CONF_PHASES,
     CONF_VOLTAGE,
+    CONF_SAFETY_MARGIN,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_ABOVE_THRESHOLD,
@@ -42,11 +44,16 @@ from .const import (
     DEFAULT_CALC_REDUCTION,
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
+    DEFAULT_SAFETY_MARGIN,
+    MIN_ACTIVE_W,
     DEFAULT_NOTIFY_SERVICE,
 )
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
+
+# Sensoren mit diesen Begriffen im Namen zählen nicht als "größter Verbraucher"
+IGNORE_KEYWORDS = ("gesamt", "total", "rated", "nennleistung", "alle phasen", "alle_phasen")
 
 
 class LastspitzeManager:
@@ -69,6 +76,7 @@ class LastspitzeManager:
         self.calc_reduction = bool(opts.get(CONF_CALC_REDUCTION, DEFAULT_CALC_REDUCTION))
         self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
         self.voltage = float(opts.get(CONF_VOLTAGE, DEFAULT_VOLTAGE))
+        self.safety_margin = float(opts.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN))
         self.notify_service = opts.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
         self.notify_target = opts.get(CONF_NOTIFY_TARGET, "")
 
@@ -233,43 +241,90 @@ class LastspitzeManager:
         else:
             self._below_since = None
 
+    def _read_power_w(self, entity_id: str | None) -> float | None:
+        """Leistungssensor einer Wallbox in W lesen (kW wird umgerechnet)."""
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return None
+        try:
+            value = float(state.state)
+        except (ValueError, TypeError):
+            return None
+        if state.attributes.get("unit_of_measurement") == "kW":
+            value *= 1000
+        return value
+
     async def _async_throttle(self, power_w: float) -> None:
         top_device = self._find_top_consumer()
+        wpa = self.voltage * self.phases  # Watt pro Ampere
 
-        # aktuelle Ströme aller Wallboxen einlesen
-        currents: dict[str, int] = {}
+        # Zustand jeder Wallbox erfassen
+        wbs = []
         for wb in self.wallboxes:
             amp_entity = wb[CONF_WB_AMP]
             amp_state = self.hass.states.get(amp_entity)
             try:
-                currents[amp_entity] = int(float(amp_state.state))
+                current = int(float(amp_state.state))
             except (ValueError, AttributeError, TypeError):
                 continue
+            p = self._read_power_w(wb.get(CONF_WB_POWER))
+            has_sensor = p is not None
+            charging = (p > MIN_ACTIVE_W) if has_sensor else True
+            # tatsächlich gezogener Strom (nie mehr als eingestellt)
+            eff = min(float(current), p / wpa) if has_sensor else float(current)
+            cap = max(0.0, (eff - self.min_amp) * wpa) if (charging and current > self.min_amp) else 0.0
+            wbs.append(
+                {"entity": amp_entity, "current": current, "power": p,
+                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0}
+            )
 
-        # Reduktion pro Wallbox bestimmen
-        step = self.reduce_step
+        # Nötige Entlastung auf ladende Wallboxen verteilen
         if self.calc_reduction:
-            excess_w = power_w - self.above_threshold
-            reducible = [e for e, a in currents.items() if a > self.min_amp]
-            if excess_w > 0 and reducible:
-                w_per_amp = self.voltage * self.phases
-                total_amp = math.ceil(excess_w / w_per_amp)
-                # gleichmäßig auf alle reduzierbaren Wallboxen verteilen (aufrunden)
-                step = max(1, math.ceil(total_amp / len(reducible)))
+            remaining = max(0.0, (power_w - self.above_threshold) * (1 + self.safety_margin / 100))
+            open_wbs = [w for w in wbs if w["cap"] > 0]
+            while open_wbs and remaining > 0.5:
+                share = remaining / len(open_wbs)
+                capped = [w for w in open_wbs if w["cap"] - w["cut"] < share]
+                if not capped:
+                    for w in open_wbs:
+                        w["cut"] += share
+                    break
+                for w in capped:
+                    take = w["cap"] - w["cut"]
+                    w["cut"] += take
+                    remaining -= take
+                    open_wbs.remove(w)
 
         changes = []
-        for amp_entity, current_amp in currents.items():
-            if current_amp > self.min_amp:
-                new_amp = max(self.min_amp, current_amp - step)
-                await self.hass.services.async_call(
-                    "number", "set_value",
-                    {"entity_id": amp_entity, "value": new_amp},
-                    blocking=True,
-                )
-                self._throttled_by_us[amp_entity] = new_amp
-                changes.append(f"{amp_entity}: {current_amp} A → {new_amp} A")
+        expected_w = 0.0
+        for w in wbs:
+            entity, current = w["entity"], w["current"]
+            if not w["charging"]:
+                changes.append(f"{entity}: lädt nicht ({w['power']:.0f} W), unverändert")
+                continue
+            if current <= self.min_amp:
+                changes.append(f"{entity}: bereits am Minimum ({self.min_amp} A)")
+                continue
+
+            if self.calc_reduction:
+                if w["cut"] <= 0:
+                    continue
+                new_amp = math.floor((w["eff"] * wpa - w["cut"]) / wpa + 1e-9)
             else:
-                changes.append(f"{amp_entity}: bereits am Minimum ({self.min_amp} A)")
+                new_amp = current - self.reduce_step
+            new_amp = max(self.min_amp, min(new_amp, current - 1))
+
+            est_w = max(0.0, (w["eff"] - new_amp) * wpa)
+            expected_w += est_w
+            await self.hass.services.async_call(
+                "number", "set_value",
+                {"entity_id": entity, "value": new_amp},
+                blocking=True,
+            )
+            self._throttled_by_us[entity] = new_amp
+            changes.append(f"{entity}: {current} A → {new_amp} A (≈ −{est_w:.0f} W)")
         self._update_sensors()
 
         message = (
@@ -278,6 +333,10 @@ class LastspitzeManager:
             f"Größter Verbraucher gerade: {top_device}.\n"
             + "\n".join(changes)
         )
+        if expected_w > 0:
+            message += f"\nErwartete Entlastung ≈ {expected_w:.0f} W (Ziel < {self.above_threshold:.0f} W)."
+        if expected_w < power_w - self.above_threshold:
+            message += "\nHinweis: Die Wallboxen allein reichen rechnerisch nicht, um unter den Zielwert zu kommen."
         await self._notify("⚠️ Lastspitze über Schwellwert", message)
 
     async def _async_restore(self) -> None:
@@ -320,6 +379,9 @@ class LastspitzeManager:
             dclass = state.attributes.get("device_class")
             if uom != "W" and dclass != "power":
                 continue
+            label = f"{state.name} {state.entity_id}".lower()
+            if any(k in label for k in IGNORE_KEYWORDS):
+                continue  # Summen- und Nennwerte sind keine echten Verbraucher
             try:
                 val = float(state.state)
             except ValueError:
