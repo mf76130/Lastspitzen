@@ -7,7 +7,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.restore_state import ExtraStoredData, RestoreEntity
 
 from .const import DOMAIN
 
@@ -23,6 +23,16 @@ async def async_setup_entry(
             LastspitzeLetzterMonatSensor(manager, entry),
         ]
     )
+
+
+class _AccumulatorData(ExtraStoredData):
+    """Zusatzdaten, die beim Beenden/Neuladen mitgespeichert werden."""
+
+    def __init__(self, data: dict) -> None:
+        self._data = data
+
+    def as_dict(self) -> dict:
+        return self._data
 
 
 class _BaseLastspitzeSensor(RestoreEntity, SensorEntity):
@@ -75,7 +85,24 @@ class LastspitzeAktuellSensor(_BaseLastspitzeSensor):
     def extra_state_attributes(self):
         # Nachverfolgung, welche Wallboxen die Integration selbst gedrosselt hat -
         # übersteht so auch einen HA-Neustart (via RestoreEntity).
-        return {"throttled_wallboxes": json.dumps(self.manager._throttled_by_us)}
+        return {
+            "throttled_wallboxes": json.dumps(self.manager._throttled_by_us),
+            "quarter_coverage": self.manager.quarter_coverage,
+        }
+
+    @property
+    def extra_restore_state_data(self):
+        # laufende Viertelstunde mitspeichern (wird beim Beenden/Neuladen frisch abgefragt)
+        return _AccumulatorData(self.manager.accumulator_snapshot())
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        extra = await self.async_get_last_extra_data()
+        if extra is not None:
+            try:
+                self.manager.restore_accumulator(extra.as_dict())
+            except Exception:  # noqa: BLE001 - Wiederherstellung darf das Laden nie verhindern
+                pass
 
     def _restore(self, value: float) -> None:
         self.manager.current_kw = value

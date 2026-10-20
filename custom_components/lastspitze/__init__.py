@@ -55,6 +55,9 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
 
+# Mindestens so viele Sekunden einer Viertelstunde müssen erfasst sein (50 %), sonst wird der Wert verworfen
+MIN_QUARTER_COVERAGE_S = 450
+
 # Sensoren mit diesen Begriffen im Namen zählen nicht als "größter Verbraucher"
 IGNORE_KEYWORDS = ("gesamt", "total", "rated", "nennleistung", "alle phasen", "alle_phasen")
 
@@ -90,8 +93,10 @@ class LastspitzeManager:
 
         # Viertelstunden-Integration (Trapez-Näherung aus dem Leistungssensor)
         self._accumulated_wh = 0.0
+        self._observed_s = 0.0  # Sekunden der laufenden Viertelstunde, die wirklich erfasst wurden
         self._last_sample_time = None
         self._last_power_w = 0.0
+        self.quarter_coverage = None  # Anteil (0..1) der zuletzt ausgewerteten Viertelstunde, der erfasst war
 
         # Debounce-Zustände für "for:"-artiges Verhalten
         self._above_since = None
@@ -113,8 +118,42 @@ class LastspitzeManager:
     def register_sensor(self, sensor) -> None:
         self.sensors.append(sensor)
 
+    @staticmethod
+    def _quarter_start(moment) -> str:
+        """Beginn der Viertelstunde (UTC, ISO) zu einem Zeitpunkt."""
+        floored = moment.replace(minute=(moment.minute // 15) * 15, second=0, microsecond=0)
+        return floored.isoformat()
+
+    def accumulator_snapshot(self) -> dict:
+        """Laufende Viertelstunde, damit sie Neustarts/Neuladen übersteht."""
+        return {
+            "quarter_start": self._quarter_start(dt_util.utcnow()),
+            "accumulated_wh": self._accumulated_wh,
+            "observed_s": self._observed_s,
+        }
+
+    def restore_accumulator(self, data: dict) -> None:
+        """Gespeicherte Viertelstunde übernehmen - nur, wenn sie noch die aktuelle ist."""
+        try:
+            if data.get("quarter_start") != self._quarter_start(dt_util.utcnow()):
+                return
+            self._accumulated_wh = float(data.get("accumulated_wh", 0.0))
+            self._observed_s = float(data.get("observed_s", 0.0))
+        except (ValueError, TypeError, AttributeError):
+            return
+        _LOGGER.info(
+            "Lastspitze: laufende Viertelstunde wiederhergestellt (%.0f s erfasst).", self._observed_s
+        )
+
     async def async_setup(self) -> None:
         self._last_sample_time = dt_util.utcnow()
+        # Startwert für die Trapezregel, sonst wäre das erste Intervall zu klein
+        start_state = self.hass.states.get(self.power_sensor)
+        if start_state is not None:
+            try:
+                self._last_power_w = max(0.0, float(start_state.state))
+            except (ValueError, TypeError):
+                pass
         self._unsub.append(
             async_track_time_interval(self.hass, self._async_sample, timedelta(seconds=10))
         )
@@ -162,9 +201,12 @@ class LastspitzeManager:
             return
         now = dt_util.utcnow()
         if self._last_sample_time is not None:
-            dt_hours = (now - self._last_sample_time).total_seconds() / 3600
-            avg_w = (power_w + self._last_power_w) / 2
-            self._accumulated_wh += avg_w * dt_hours
+            dt_s = (now - self._last_sample_time).total_seconds()
+            # Lücken (Sensor ausgefallen, Neustart) nicht hochrechnen
+            if 0 < dt_s <= 60:
+                avg_w = (power_w + self._last_power_w) / 2
+                self._accumulated_wh += avg_w * dt_s / 3600
+                self._observed_s += dt_s
         self._last_sample_time = now
         self._last_power_w = power_w
 
@@ -203,11 +245,21 @@ class LastspitzeManager:
     def _async_quarter_boundary(self, now) -> None:
         """Wird bei :00/:15/:30/:45 aufgerufen - entspricht utility_meter cycle: quarter-hourly."""
         self._async_sample(now)
-        kwh = self._accumulated_wh / 1000
-        self.current_kw = round(kwh * 4, 3)
+        observed_s = self._observed_s
+        self.quarter_coverage = round(min(1.0, observed_s / 900), 2)
+        if observed_s >= MIN_QUARTER_COVERAGE_S:
+            # Mittelwert über die tatsächlich erfasste Zeit (bei Lücken nicht zu klein)
+            kw = (self._accumulated_wh / 1000) / (observed_s / 3600)
+            self.current_kw = round(kw, 3)
+            if self.current_kw > self.month_max_kw:
+                self.month_max_kw = self.current_kw
+        else:
+            _LOGGER.warning(
+                "Lastspitze: Viertelstunde nur %.0f s erfasst (Neustart?), Wert wird nicht übernommen.",
+                observed_s,
+            )
         self._accumulated_wh = 0.0
-        if self.current_kw > self.month_max_kw:
-            self.month_max_kw = self.current_kw
+        self._observed_s = 0.0
         self._update_sensors()
 
     @callback

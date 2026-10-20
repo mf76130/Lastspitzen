@@ -125,6 +125,19 @@ Home-Assistant-Statistiken (Langzeitverlauf, `statistics-graph`).
 > gleichnamige Entities automatisch `_2` usw. an – im Dashboard dann
 > entsprechend anpassen.
 
+## Neustarts mitten in der Viertelstunde
+
+Die laufende Viertelstunde (aufgelaufene Energie und erfasste Zeit) wird beim Beenden oder Neuladen der
+Integration mitgespeichert und danach wieder aufgenommen. Zusätzlich gilt:
+
+- Der Wert wird auf die **tatsächlich erfasste Zeit** bezogen, eine kurze Lücke macht ihn also nicht mehr zu klein.
+- Wurde weniger als die Hälfte der Viertelstunde (7,5 Minuten) erfasst, wird der Wert **nicht übernommen**
+  (der alte bleibt stehen, im Protokoll steht eine Warnung) und fließt nicht ins Monatsmaximum ein.
+- Das Attribut `quarter_coverage` am Sensor `sensor.lastspitze_aktuell` zeigt, welcher Anteil (0 bis 1) der
+  zuletzt ausgewerteten Viertelstunde erfasst war.
+
+Die Regelung der Wallbox (Warnung/Drosselung) arbeitet mit dem Momentanwert und ist davon nicht betroffen.
+
 ## Wie die Viertelstunden-Leistung berechnet wird
 
 Statt eines separaten `utility_meter`-Helfers integriert die Integration
