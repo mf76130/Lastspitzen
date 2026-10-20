@@ -10,6 +10,7 @@ CONF_WALLBOXES = "wallboxes"
 CONF_WB_AMP = "amp_entity"
 CONF_WB_MAX_AMP = "max_amp_entity"
 CONF_WB_POWER = "power_entity"
+CONF_WB_STATUS = "status_entity"
 CONF_ABOVE_THRESHOLD = "above_threshold_w"
 CONF_ABOVE_DURATION = "above_duration_s"
 CONF_BELOW_THRESHOLD = "below_threshold_w"
@@ -20,6 +21,7 @@ CONF_CALC_REDUCTION = "calc_reduction"
 CONF_PHASES = "charging_phases"
 CONF_VOLTAGE = "voltage_v"
 CONF_SAFETY_MARGIN = "safety_margin_pct"
+CONF_CHARGING_STATES = "charging_states"
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_TARGET = "notify_target"
 
@@ -36,6 +38,8 @@ DEFAULT_CALC_REDUCTION = True
 DEFAULT_PHASES = 3
 DEFAULT_VOLTAGE = 230
 DEFAULT_SAFETY_MARGIN = 10
+# Status-Werte (klein geschrieben, kommagetrennt), die "Wallbox lädt gerade" bedeuten
+DEFAULT_CHARGING_STATES = "charging,laden,lädt,ladend,on,true,in use"
 
 # Eine Wallbox gilt als "ladend", wenn ihr Leistungssensor mehr als diesen Wert (W) zeigt
 MIN_ACTIVE_W = 300

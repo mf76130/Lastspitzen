@@ -54,6 +54,20 @@ Ohne Leistungssensor gilt wie bisher der eingestellte Strom und alle Wallboxen w
 
 In der Meldung „größter Verbraucher" werden Summen- und Nennwerte (Namen mit „Gesamt", „Total", „Rated", „Alle Phasen") ausgelassen.
 
+### Status pro Wallbox (optional)
+
+Meldet der Leistungssensor einer Wallbox verzögert, kannst du zusätzlich ein **Status-Entity** angeben
+(z. B. den Fahrzeugstatus der Wallbox). Ist es gesetzt, entscheidet der Status, ob die Wallbox lädt:
+
+- Status „lädt" → die Wallbox wird gedrosselt. Zeigt der Leistungssensor noch nichts, rechnet die
+  Integration mit dem eingestellten Strom.
+- Status „schläft/idle/…" → die Wallbox wird nicht angefasst, auch wenn der Leistungssensor noch einen alten Wert zeigt.
+- Status `unknown`/`unavailable` → Rückfall auf den Leistungssensor.
+
+Welche Status-Werte „lädt" bedeuten, steht im Feld **„Status-Werte für lädt"** (kommagetrennt, ohne
+Groß-/Kleinschreibung, Standard: `charging, laden, lädt, ladend, on, true, in use`). Passt der Status deiner Wallbox
+nicht dazu, trag dort den passenden Wert ein. Die aktuellen Werte siehst du unter Entwicklerwerkzeuge → Zustände.
+
 ## Manuelle Wallbox-Eingriffe
 
 Die Integration merkt sich intern, welche Wallboxen sie selbst gedrosselt hat.

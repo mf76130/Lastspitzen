@@ -25,6 +25,7 @@ from .const import (
     CONF_WB_AMP,
     CONF_WB_MAX_AMP,
     CONF_WB_POWER,
+    CONF_WB_STATUS,
     CONF_ABOVE_THRESHOLD,
     CONF_ABOVE_DURATION,
     CONF_BELOW_THRESHOLD,
@@ -35,6 +36,7 @@ from .const import (
     CONF_PHASES,
     CONF_VOLTAGE,
     CONF_SAFETY_MARGIN,
+    CONF_CHARGING_STATES,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_NAME,
@@ -50,6 +52,7 @@ from .const import (
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
     DEFAULT_SAFETY_MARGIN,
+    DEFAULT_CHARGING_STATES,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -141,6 +144,10 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
             ): NumberSelector(
                 NumberSelectorConfig(min=0, max=50, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="%")
             ),
+            vol.Optional(
+                CONF_CHARGING_STATES,
+                default=defaults.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES),
+            ): TextSelector(),
         }
     )
 
@@ -162,6 +169,14 @@ def _wallboxes_schema(count: int, existing: list) -> vol.Schema:
                 description={"suggested_value": prev.get(CONF_WB_POWER)},
             )
         ] = EntitySelector(EntitySelectorConfig(domain="sensor"))
+        fields[
+            vol.Optional(
+                f"{CONF_WB_STATUS}_{i}",
+                description={"suggested_value": prev.get(CONF_WB_STATUS)},
+            )
+        ] = EntitySelector(
+            EntitySelectorConfig(domain=["sensor", "binary_sensor", "select", "switch"])
+        )
     return vol.Schema(fields)
 
 
@@ -175,6 +190,9 @@ def _collect_wallboxes(user_input: dict, count: int) -> list:
         power = user_input.get(f"{CONF_WB_POWER}_{i}")
         if power:
             wb[CONF_WB_POWER] = power
+        status = user_input.get(f"{CONF_WB_STATUS}_{i}")
+        if status:
+            wb[CONF_WB_STATUS] = status
         wallboxes.append(wb)
     return wallboxes
 

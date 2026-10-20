@@ -29,7 +29,8 @@
           "calc_reduction": "Calculate reduction (drop below threshold at once)",
           "charging_phases": "Charging phases of the wallbox (1 or 3)",
           "voltage_v": "Grid voltage per phase (V)",
-          "safety_margin_pct": "Safety margin on the reduction (%)"
+          "safety_margin_pct": "Safety margin on the reduction (%)",
+          "charging_states": "Status values meaning “charging” (comma-separated)"
         }
       },
       "wallboxes": {
@@ -65,7 +66,17 @@
           "power_entity_6": "Wallbox 7 – Charging power in W (sensor, optional)",
           "power_entity_7": "Wallbox 8 – Charging power in W (sensor, optional)",
           "power_entity_8": "Wallbox 9 – Charging power in W (sensor, optional)",
-          "power_entity_9": "Wallbox 10 – Charging power in W (sensor, optional)"
+          "power_entity_9": "Wallbox 10 – Charging power in W (sensor, optional)",
+          "status_entity_0": "Wallbox 1 – Status (charging/idle, optional)",
+          "status_entity_1": "Wallbox 2 – Status (charging/idle, optional)",
+          "status_entity_2": "Wallbox 3 – Status (charging/idle, optional)",
+          "status_entity_3": "Wallbox 4 – Status (charging/idle, optional)",
+          "status_entity_4": "Wallbox 5 – Status (charging/idle, optional)",
+          "status_entity_5": "Wallbox 6 – Status (charging/idle, optional)",
+          "status_entity_6": "Wallbox 7 – Status (charging/idle, optional)",
+          "status_entity_7": "Wallbox 8 – Status (charging/idle, optional)",
+          "status_entity_8": "Wallbox 9 – Status (charging/idle, optional)",
+          "status_entity_9": "Wallbox 10 – Status (charging/idle, optional)"
         }
       }
     },
@@ -101,7 +112,8 @@
           "calc_reduction": "Calculate reduction (drop below threshold at once)",
           "charging_phases": "Charging phases of the wallbox (1 or 3)",
           "voltage_v": "Grid voltage per phase (V)",
-          "safety_margin_pct": "Safety margin on the reduction (%)"
+          "safety_margin_pct": "Safety margin on the reduction (%)",
+          "charging_states": "Status values meaning “charging” (comma-separated)"
         }
       },
       "wallboxes": {
@@ -137,7 +149,17 @@
           "power_entity_6": "Wallbox 7 – Charging power in W (sensor, optional)",
           "power_entity_7": "Wallbox 8 – Charging power in W (sensor, optional)",
           "power_entity_8": "Wallbox 9 – Charging power in W (sensor, optional)",
-          "power_entity_9": "Wallbox 10 – Charging power in W (sensor, optional)"
+          "power_entity_9": "Wallbox 10 – Charging power in W (sensor, optional)",
+          "status_entity_0": "Wallbox 1 – Status (charging/idle, optional)",
+          "status_entity_1": "Wallbox 2 – Status (charging/idle, optional)",
+          "status_entity_2": "Wallbox 3 – Status (charging/idle, optional)",
+          "status_entity_3": "Wallbox 4 – Status (charging/idle, optional)",
+          "status_entity_4": "Wallbox 5 – Status (charging/idle, optional)",
+          "status_entity_5": "Wallbox 6 – Status (charging/idle, optional)",
+          "status_entity_6": "Wallbox 7 – Status (charging/idle, optional)",
+          "status_entity_7": "Wallbox 8 – Status (charging/idle, optional)",
+          "status_entity_8": "Wallbox 9 – Status (charging/idle, optional)",
+          "status_entity_9": "Wallbox 10 – Status (charging/idle, optional)"
         }
       }
     }

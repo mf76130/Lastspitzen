@@ -23,6 +23,7 @@ from .const import (
     CONF_WB_AMP,
     CONF_WB_MAX_AMP,
     CONF_WB_POWER,
+    CONF_WB_STATUS,
     CONF_ABOVE_THRESHOLD,
     CONF_ABOVE_DURATION,
     CONF_BELOW_THRESHOLD,
@@ -33,6 +34,7 @@ from .const import (
     CONF_PHASES,
     CONF_VOLTAGE,
     CONF_SAFETY_MARGIN,
+    CONF_CHARGING_STATES,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_ABOVE_THRESHOLD,
@@ -45,6 +47,7 @@ from .const import (
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
     DEFAULT_SAFETY_MARGIN,
+    DEFAULT_CHARGING_STATES,
     MIN_ACTIVE_W,
     DEFAULT_NOTIFY_SERVICE,
 )
@@ -77,6 +80,11 @@ class LastspitzeManager:
         self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
         self.voltage = float(opts.get(CONF_VOLTAGE, DEFAULT_VOLTAGE))
         self.safety_margin = float(opts.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN))
+        self.charging_states = {
+            v.strip().lower()
+            for v in str(opts.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES)).split(",")
+            if v.strip()
+        }
         self.notify_service = opts.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
         self.notify_target = opts.get(CONF_NOTIFY_TARGET, "")
 
@@ -256,6 +264,15 @@ class LastspitzeManager:
             value *= 1000
         return value
 
+    def _read_status(self, entity_id: str | None) -> str | None:
+        """Status-Entity einer Wallbox lesen (klein geschrieben) oder None, wenn unbekannt."""
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable", ""):
+            return None
+        return state.state.strip().lower()
+
     async def _async_throttle(self, power_w: float) -> None:
         top_device = self._find_top_consumer()
         wpa = self.voltage * self.phases  # Watt pro Ampere
@@ -271,13 +288,22 @@ class LastspitzeManager:
                 continue
             p = self._read_power_w(wb.get(CONF_WB_POWER))
             has_sensor = p is not None
-            charging = (p > MIN_ACTIVE_W) if has_sensor else True
-            # tatsächlich gezogener Strom (nie mehr als eingestellt)
-            eff = min(float(current), p / wpa) if has_sensor else float(current)
+            status = self._read_status(wb.get(CONF_WB_STATUS))
+            if status is not None:
+                # Status hat Vorrang: der Leistungssensor kann verzögert melden
+                charging = status in self.charging_states
+                if charging and has_sensor and p > MIN_ACTIVE_W:
+                    eff = min(float(current), p / wpa)
+                else:
+                    eff = float(current)  # lädt laut Status, Leistung noch nicht sichtbar
+            else:
+                charging = (p > MIN_ACTIVE_W) if has_sensor else True
+                # tatsächlich gezogener Strom (nie mehr als eingestellt)
+                eff = min(float(current), p / wpa) if has_sensor else float(current)
             cap = max(0.0, (eff - self.min_amp) * wpa) if (charging and current > self.min_amp) else 0.0
             wbs.append(
                 {"entity": amp_entity, "current": current, "power": p,
-                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0}
+                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0, "status": status}
             )
 
         # Nötige Entlastung auf ladende Wallboxen verteilen
@@ -302,7 +328,11 @@ class LastspitzeManager:
         for w in wbs:
             entity, current = w["entity"], w["current"]
             if not w["charging"]:
-                changes.append(f"{entity}: lädt nicht ({w['power']:.0f} W), unverändert")
+                if w["status"] is not None:
+                    reason = f"Status: {w['status']}"
+                else:
+                    reason = f"{w['power']:.0f} W"
+                changes.append(f"{entity}: lädt nicht ({reason}), unverändert")
                 continue
             if current <= self.min_amp:
                 changes.append(f"{entity}: bereits am Minimum ({self.min_amp} A)")

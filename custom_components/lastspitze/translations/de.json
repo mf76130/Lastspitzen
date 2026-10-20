@@ -26,12 +26,13 @@
           "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
-          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)"
+          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
+          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)"
         }
       },
       "wallboxes": {
         "title": "Wallbox-Entities",
-        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung, Entity mit dem Maximalstrom und optional der Leistungssensor (W). Mit Leistungssensor wird nur auf Wallboxen reduziert, die wirklich laden.",
+        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung, Entity mit dem Maximalstrom, optional Leistungssensor (W) und optional ein Status-Entity (lädt/schläft). Ist ein Status angegeben, entscheidet er, ob die Wallbox gedrosselt wird – auch wenn der Leistungssensor verzögert meldet.",
         "data": {
           "amp_entity_0": "Wallbox 1 – Aktueller Ladestrom (number)",
           "max_amp_entity_0": "Wallbox 1 – Maximal zulässiger Ladestrom (number)",
@@ -62,7 +63,17 @@
           "power_entity_6": "Wallbox 7 – Ladeleistung in W (Sensor, optional)",
           "power_entity_7": "Wallbox 8 – Ladeleistung in W (Sensor, optional)",
           "power_entity_8": "Wallbox 9 – Ladeleistung in W (Sensor, optional)",
-          "power_entity_9": "Wallbox 10 – Ladeleistung in W (Sensor, optional)"
+          "power_entity_9": "Wallbox 10 – Ladeleistung in W (Sensor, optional)",
+          "status_entity_0": "Wallbox 1 – Status (lädt/schläft, optional)",
+          "status_entity_1": "Wallbox 2 – Status (lädt/schläft, optional)",
+          "status_entity_2": "Wallbox 3 – Status (lädt/schläft, optional)",
+          "status_entity_3": "Wallbox 4 – Status (lädt/schläft, optional)",
+          "status_entity_4": "Wallbox 5 – Status (lädt/schläft, optional)",
+          "status_entity_5": "Wallbox 6 – Status (lädt/schläft, optional)",
+          "status_entity_6": "Wallbox 7 – Status (lädt/schläft, optional)",
+          "status_entity_7": "Wallbox 8 – Status (lädt/schläft, optional)",
+          "status_entity_8": "Wallbox 9 – Status (lädt/schläft, optional)",
+          "status_entity_9": "Wallbox 10 – Status (lädt/schläft, optional)"
         }
       }
     },
@@ -94,12 +105,13 @@
           "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
-          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)"
+          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
+          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)"
         }
       },
       "wallboxes": {
         "title": "Wallbox-Entities",
-        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung, Entity mit dem Maximalstrom und optional der Leistungssensor (W). Mit Leistungssensor wird nur auf Wallboxen reduziert, die wirklich laden.",
+        "description": "Für jede Wallbox: Entity zur Ladestrom-Steuerung, Entity mit dem Maximalstrom, optional Leistungssensor (W) und optional ein Status-Entity (lädt/schläft). Ist ein Status angegeben, entscheidet er, ob die Wallbox gedrosselt wird – auch wenn der Leistungssensor verzögert meldet.",
         "data": {
           "amp_entity_0": "Wallbox 1 – Aktueller Ladestrom (number)",
           "max_amp_entity_0": "Wallbox 1 – Maximal zulässiger Ladestrom (number)",
@@ -130,7 +142,17 @@
           "power_entity_6": "Wallbox 7 – Ladeleistung in W (Sensor, optional)",
           "power_entity_7": "Wallbox 8 – Ladeleistung in W (Sensor, optional)",
           "power_entity_8": "Wallbox 9 – Ladeleistung in W (Sensor, optional)",
-          "power_entity_9": "Wallbox 10 – Ladeleistung in W (Sensor, optional)"
+          "power_entity_9": "Wallbox 10 – Ladeleistung in W (Sensor, optional)",
+          "status_entity_0": "Wallbox 1 – Status (lädt/schläft, optional)",
+          "status_entity_1": "Wallbox 2 – Status (lädt/schläft, optional)",
+          "status_entity_2": "Wallbox 3 – Status (lädt/schläft, optional)",
+          "status_entity_3": "Wallbox 4 – Status (lädt/schläft, optional)",
+          "status_entity_4": "Wallbox 5 – Status (lädt/schläft, optional)",
+          "status_entity_5": "Wallbox 6 – Status (lädt/schläft, optional)",
+          "status_entity_6": "Wallbox 7 – Status (lädt/schläft, optional)",
+          "status_entity_7": "Wallbox 8 – Status (lädt/schläft, optional)",
+          "status_entity_8": "Wallbox 9 – Status (lädt/schläft, optional)",
+          "status_entity_9": "Wallbox 10 – Status (lädt/schläft, optional)"
         }
       }
     }
