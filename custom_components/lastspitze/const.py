@@ -22,6 +22,8 @@ CONF_PHASES = "charging_phases"
 CONF_VOLTAGE = "voltage_v"
 CONF_SAFETY_MARGIN = "safety_margin_pct"
 CONF_CHARGING_STATES = "charging_states"
+CONF_IDLE_STATES = "idle_states"
+CONF_IGNORE_KEYWORDS = "ignore_keywords"
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_TARGET = "notify_target"
 
@@ -40,6 +42,10 @@ DEFAULT_VOLTAGE = 230
 DEFAULT_SAFETY_MARGIN = 10
 # Status-Werte (klein geschrieben, kommagetrennt), die "Wallbox lädt gerade" bedeuten
 DEFAULT_CHARGING_STATES = "charging,laden,lädt,ladend,on,true,in use"
+# Status-Werte, die sicher "lädt nicht" bedeuten. Alles Unbekannte wird als ladend behandelt (lieber drosseln als nichts tun).
+DEFAULT_IDLE_STATES = "idle,sleep,off,standby,complete,completed,finished,waitcar,wait_car,disconnected,unplugged,not_charging,false,unavailable_car"
+# Sensoren mit diesen Begriffen im Namen zählen nicht als "größter Verbraucher" (Summen-/Nennwerte)
+DEFAULT_IGNORE_KEYWORDS = "gesamt,total,rated,nennleistung,alle phasen,alle_phasen,house load,house_load,hausverbrauch"
 
 # Eine Wallbox gilt als "ladend", wenn ihr Leistungssensor mehr als diesen Wert (W) zeigt
 MIN_ACTIVE_W = 300

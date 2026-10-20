@@ -37,6 +37,8 @@ from .const import (
     CONF_VOLTAGE,
     CONF_SAFETY_MARGIN,
     CONF_CHARGING_STATES,
+    CONF_IDLE_STATES,
+    CONF_IGNORE_KEYWORDS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_NAME,
@@ -53,6 +55,8 @@ from .const import (
     DEFAULT_VOLTAGE,
     DEFAULT_SAFETY_MARGIN,
     DEFAULT_CHARGING_STATES,
+    DEFAULT_IDLE_STATES,
+    DEFAULT_IGNORE_KEYWORDS,
     DEFAULT_NOTIFY_SERVICE,
 )
 
@@ -96,6 +100,10 @@ def _base_schema(defaults: dict) -> vol.Schema:
             ): TextSelector(),
             vol.Optional(
                 CONF_NOTIFY_TARGET, default=defaults.get(CONF_NOTIFY_TARGET, "")
+            ): TextSelector(),
+            vol.Optional(
+                CONF_IGNORE_KEYWORDS,
+                default=defaults.get(CONF_IGNORE_KEYWORDS, DEFAULT_IGNORE_KEYWORDS),
             ): TextSelector(),
             vol.Required(
                 CONF_ENABLE_WALLBOX,
@@ -147,6 +155,10 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
             vol.Optional(
                 CONF_CHARGING_STATES,
                 default=defaults.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES),
+            ): TextSelector(),
+            vol.Optional(
+                CONF_IDLE_STATES,
+                default=defaults.get(CONF_IDLE_STATES, DEFAULT_IDLE_STATES),
             ): TextSelector(),
         }
     )

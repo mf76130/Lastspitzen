@@ -52,7 +52,8 @@ Gibst du bei einer Wallbox zusätzlich einen Leistungssensor (W) an, geht die In
 
 Ohne Leistungssensor gilt wie bisher der eingestellte Strom und alle Wallboxen werden gleich behandelt.
 
-In der Meldung „größter Verbraucher" werden Summen- und Nennwerte (Namen mit „Gesamt", „Total", „Rated", „Alle Phasen") ausgelassen.
+In der Meldung „größter Verbraucher" werden Summen- und Nennwerte ausgelassen. Welche Begriffe im Sensornamen dazu führen,
+steht im Feld **„Begriffe, die beim größten Verbraucher ignoriert werden"** (Standard u. a. `gesamt, total, rated, house load, hausverbrauch`).
 
 ### Status pro Wallbox (optional)
 
@@ -64,9 +65,16 @@ Meldet der Leistungssensor einer Wallbox verzögert, kannst du zusätzlich ein *
 - Status „schläft/idle/…" → die Wallbox wird nicht angefasst, auch wenn der Leistungssensor noch einen alten Wert zeigt.
 - Status `unknown`/`unavailable` → Rückfall auf den Leistungssensor.
 
-Welche Status-Werte „lädt" bedeuten, steht im Feld **„Status-Werte für lädt"** (kommagetrennt, ohne
-Groß-/Kleinschreibung, Standard: `charging, laden, lädt, ladend, on, true, in use`). Passt der Status deiner Wallbox
-nicht dazu, trag dort den passenden Wert ein. Die aktuellen Werte siehst du unter Entwicklerwerkzeuge → Zustände.
+Welche Status-Werte „lädt" bzw. „lädt nicht" bedeuten, steht in zwei Feldern (kommagetrennt, ohne
+Groß-/Kleinschreibung): **„Status-Werte für lädt"** (Standard `charging, laden, lädt, ladend, on, true, in use`) und
+**„Status-Werte für lädt nicht"** (Standard u. a. `idle, sleep, off, standby, complete, waitcar`).
+**Ein Status, der in keiner der beiden Listen steht, wird als „lädt" behandelt** – im Zweifel wird also gedrosselt
+statt nichts zu tun, und die Benachrichtigung weist darauf hin, den Wert zu ergänzen.
+Die aktuellen Werte siehst du unter Entwicklerwerkzeuge → Zustände. Wähle möglichst den **Fahrzeug-/Ladestatus**
+der Wallbox (z. B. beim go-e „Auto-Status"), nicht eine Freigabe-Einstellung wie `forced_on`.
+
+Die Drosselung läuft auch dann, wenn die Wallboxen allein den Zielwert rechnerisch nicht erreichen können:
+sie gehen dann bis auf den minimalen Ladestrom herunter.
 
 ## Manuelle Wallbox-Eingriffe
 

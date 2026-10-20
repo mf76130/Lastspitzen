@@ -35,6 +35,8 @@ from .const import (
     CONF_VOLTAGE,
     CONF_SAFETY_MARGIN,
     CONF_CHARGING_STATES,
+    CONF_IDLE_STATES,
+    CONF_IGNORE_KEYWORDS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_TARGET,
     DEFAULT_ABOVE_THRESHOLD,
@@ -48,6 +50,8 @@ from .const import (
     DEFAULT_VOLTAGE,
     DEFAULT_SAFETY_MARGIN,
     DEFAULT_CHARGING_STATES,
+    DEFAULT_IDLE_STATES,
+    DEFAULT_IGNORE_KEYWORDS,
     MIN_ACTIVE_W,
     DEFAULT_NOTIFY_SERVICE,
 )
@@ -58,8 +62,6 @@ PLATFORMS = ["sensor"]
 # Mindestens so viele Sekunden einer Viertelstunde müssen erfasst sein (50 %), sonst wird der Wert verworfen
 MIN_QUARTER_COVERAGE_S = 450
 
-# Sensoren mit diesen Begriffen im Namen zählen nicht als "größter Verbraucher"
-IGNORE_KEYWORDS = ("gesamt", "total", "rated", "nennleistung", "alle phasen", "alle_phasen")
 
 
 class LastspitzeManager:
@@ -83,11 +85,11 @@ class LastspitzeManager:
         self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
         self.voltage = float(opts.get(CONF_VOLTAGE, DEFAULT_VOLTAGE))
         self.safety_margin = float(opts.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN))
-        self.charging_states = {
-            v.strip().lower()
-            for v in str(opts.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES)).split(",")
-            if v.strip()
-        }
+        self.charging_states = self._split(opts.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES))
+        self.idle_states = self._split(opts.get(CONF_IDLE_STATES, DEFAULT_IDLE_STATES))
+        self.ignore_keywords = tuple(
+            self._split(opts.get(CONF_IGNORE_KEYWORDS, DEFAULT_IGNORE_KEYWORDS))
+        )
         self.notify_service = opts.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)
         self.notify_target = opts.get(CONF_NOTIFY_TARGET, "")
 
@@ -117,6 +119,11 @@ class LastspitzeManager:
 
     def register_sensor(self, sensor) -> None:
         self.sensors.append(sensor)
+
+    @staticmethod
+    def _split(value) -> set:
+        """Kommagetrennten Text in eine Menge kleingeschriebener Begriffe umwandeln."""
+        return {v.strip().lower() for v in str(value or "").split(",") if v.strip()}
 
     @staticmethod
     def _quarter_start(moment) -> str:
@@ -341,9 +348,16 @@ class LastspitzeManager:
             p = self._read_power_w(wb.get(CONF_WB_POWER))
             has_sensor = p is not None
             status = self._read_status(wb.get(CONF_WB_STATUS))
+            status_unknown = False
             if status is not None:
                 # Status hat Vorrang: der Leistungssensor kann verzögert melden
-                charging = status in self.charging_states
+                if status in self.charging_states:
+                    charging = True
+                elif status in self.idle_states:
+                    charging = False
+                else:
+                    charging = True  # unbekannter Status: lieber drosseln als nichts tun
+                    status_unknown = True
                 if charging and has_sensor and p > MIN_ACTIVE_W:
                     eff = min(float(current), p / wpa)
                 else:
@@ -355,7 +369,7 @@ class LastspitzeManager:
             cap = max(0.0, (eff - self.min_amp) * wpa) if (charging and current > self.min_amp) else 0.0
             wbs.append(
                 {"entity": amp_entity, "current": current, "power": p,
-                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0, "status": status}
+                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0, "status": status, "status_unknown": status_unknown}
             )
 
         # Nötige Entlastung auf ladende Wallboxen verteilen
@@ -379,6 +393,11 @@ class LastspitzeManager:
         expected_w = 0.0
         for w in wbs:
             entity, current = w["entity"], w["current"]
+            if w["status_unknown"]:
+                changes.append(
+                    f"{entity}: Status „{w['status']}“ unbekannt, wird als ladend behandelt "
+                    "(Status-Werte in der Konfiguration ergänzen)"
+                )
             if not w["charging"]:
                 if w["status"] is not None:
                     reason = f"Status: {w['status']}"
@@ -462,7 +481,7 @@ class LastspitzeManager:
             if uom != "W" and dclass != "power":
                 continue
             label = f"{state.name} {state.entity_id}".lower()
-            if any(k in label for k in IGNORE_KEYWORDS):
+            if any(k in label for k in self.ignore_keywords):
                 continue  # Summen- und Nennwerte sind keine echten Verbraucher
             try:
                 val = float(state.state)

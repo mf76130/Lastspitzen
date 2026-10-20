@@ -16,7 +16,8 @@
           "min_amp": "Minimum charging current (A)",
           "reduce_step_a": "Reduction step (A)",
           "notify_service": "Notify service (e.g. notify.pushover)",
-          "notify_target": "Notify target (optional)"
+          "notify_target": "Notify target (optional)",
+          "ignore_keywords": "Terms ignored for “largest consumer” (comma-separated)"
         }
       },
       "wallbox_count": {
@@ -30,7 +31,8 @@
           "charging_phases": "Charging phases of the wallbox (1 or 3)",
           "voltage_v": "Grid voltage per phase (V)",
           "safety_margin_pct": "Safety margin on the reduction (%)",
-          "charging_states": "Status values meaning “charging” (comma-separated)"
+          "charging_states": "Status values meaning “charging” (comma-separated)",
+          "idle_states": "Status values meaning “not charging” (comma-separated)"
         }
       },
       "wallboxes": {
@@ -99,7 +101,8 @@
           "min_amp": "Minimum charging current (A)",
           "reduce_step_a": "Reduction step (A)",
           "notify_service": "Notify service",
-          "notify_target": "Notify target (optional)"
+          "notify_target": "Notify target (optional)",
+          "ignore_keywords": "Terms ignored for “largest consumer” (comma-separated)"
         }
       },
       "wallbox_count": {
@@ -113,7 +116,8 @@
           "charging_phases": "Charging phases of the wallbox (1 or 3)",
           "voltage_v": "Grid voltage per phase (V)",
           "safety_margin_pct": "Safety margin on the reduction (%)",
-          "charging_states": "Status values meaning “charging” (comma-separated)"
+          "charging_states": "Status values meaning “charging” (comma-separated)",
+          "idle_states": "Status values meaning “not charging” (comma-separated)"
         }
       },
       "wallboxes": {

@@ -13,7 +13,8 @@
           "below_duration_s": "Dauer unter Schwelle (s)",
           "notify_service": "Notify-Service (z.B. notify.pushover)",
           "notify_target": "Notify-Ziel (optional)",
-          "enable_wallbox_control": "Wallbox-Steuerung aktivieren"
+          "enable_wallbox_control": "Wallbox-Steuerung aktivieren",
+          "ignore_keywords": "Begriffe, die beim „größten Verbraucher“ ignoriert werden (kommagetrennt)"
         }
       },
       "wallbox_count": {
@@ -27,7 +28,8 @@
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
           "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
-          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)"
+          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)",
+          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)"
         }
       },
       "wallboxes": {
@@ -93,7 +95,8 @@
           "below_duration_s": "Dauer unter Schwelle (s)",
           "notify_service": "Notify-Service",
           "notify_target": "Notify-Ziel (optional)",
-          "enable_wallbox_control": "Wallbox-Steuerung aktivieren"
+          "enable_wallbox_control": "Wallbox-Steuerung aktivieren",
+          "ignore_keywords": "Begriffe, die beim „größten Verbraucher“ ignoriert werden (kommagetrennt)"
         }
       },
       "wallbox_count": {
@@ -106,7 +109,8 @@
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
           "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
-          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)"
+          "charging_states": "Status-Werte für „lädt“ (kommagetrennt)",
+          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)"
         }
       },
       "wallboxes": {
