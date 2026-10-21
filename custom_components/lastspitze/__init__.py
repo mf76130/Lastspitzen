@@ -33,7 +33,7 @@ from .const import (
     CONF_CALC_REDUCTION,
     CONF_PHASES,
     CONF_VOLTAGE,
-    CONF_SAFETY_MARGIN,
+    CONF_TARGET_BUFFER,
     CONF_CHARGING_STATES,
     CONF_IDLE_STATES,
     CONF_IGNORE_KEYWORDS,
@@ -48,7 +48,7 @@ from .const import (
     DEFAULT_CALC_REDUCTION,
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
-    DEFAULT_SAFETY_MARGIN,
+    DEFAULT_TARGET_BUFFER,
     DEFAULT_CHARGING_STATES,
     DEFAULT_IDLE_STATES,
     DEFAULT_IGNORE_KEYWORDS,
@@ -84,7 +84,7 @@ class LastspitzeManager:
         self.calc_reduction = bool(opts.get(CONF_CALC_REDUCTION, DEFAULT_CALC_REDUCTION))
         self.phases = int(opts.get(CONF_PHASES, DEFAULT_PHASES))
         self.voltage = float(opts.get(CONF_VOLTAGE, DEFAULT_VOLTAGE))
-        self.safety_margin = float(opts.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN))
+        self.target_buffer = float(opts.get(CONF_TARGET_BUFFER, DEFAULT_TARGET_BUFFER))
         self.charging_states = self._split(opts.get(CONF_CHARGING_STATES, DEFAULT_CHARGING_STATES))
         self.idle_states = self._split(opts.get(CONF_IDLE_STATES, DEFAULT_IDLE_STATES))
         self.ignore_keywords = tuple(
@@ -303,7 +303,7 @@ class LastspitzeManager:
             if self._below_since is None:
                 self._below_since = now
             elif (now - self._below_since).total_seconds() >= self.below_duration:
-                self.hass.async_create_task(self._async_restore())
+                self.hass.async_create_task(self._async_restore(power_w))
                 self._below_since = None
         else:
             self._below_since = None
@@ -332,11 +332,9 @@ class LastspitzeManager:
             return None
         return state.state.strip().lower()
 
-    async def _async_throttle(self, power_w: float) -> None:
-        top_device = self._find_top_consumer()
+    def _read_wallboxes(self) -> list[dict]:
+        """Zustand aller Wallboxen erfassen (Strom, Max, Leistung, lädt ja/nein)."""
         wpa = self.voltage * self.phases  # Watt pro Ampere
-
-        # Zustand jeder Wallbox erfassen
         wbs = []
         for wb in self.wallboxes:
             amp_entity = wb[CONF_WB_AMP]
@@ -345,6 +343,11 @@ class LastspitzeManager:
                 current = int(float(amp_state.state))
             except (ValueError, AttributeError, TypeError):
                 continue
+            max_state = self.hass.states.get(wb.get(CONF_WB_MAX_AMP) or "")
+            try:
+                max_amp = int(float(max_state.state))
+            except (ValueError, AttributeError, TypeError):
+                max_amp = None
             p = self._read_power_w(wb.get(CONF_WB_POWER))
             has_sensor = p is not None
             status = self._read_status(wb.get(CONF_WB_STATUS))
@@ -366,15 +369,26 @@ class LastspitzeManager:
                 charging = (p > MIN_ACTIVE_W) if has_sensor else True
                 # tatsächlich gezogener Strom (nie mehr als eingestellt)
                 eff = min(float(current), p / wpa) if has_sensor else float(current)
-            cap = max(0.0, (eff - self.min_amp) * wpa) if (charging and current > self.min_amp) else 0.0
             wbs.append(
-                {"entity": amp_entity, "current": current, "power": p,
-                 "charging": charging, "eff": eff, "cap": cap, "cut": 0.0, "status": status, "status_unknown": status_unknown}
+                {"entity": amp_entity, "current": current, "max_amp": max_amp, "power": p,
+                 "charging": charging, "eff": eff, "cut": 0.0, "status": status,
+                 "status_unknown": status_unknown}
+            )
+        return wbs
+
+    async def _async_throttle(self, power_w: float) -> None:
+        top_device = self._find_top_consumer()
+        wpa = self.voltage * self.phases  # Watt pro Ampere
+        wbs = self._read_wallboxes()
+        for w in wbs:
+            w["cap"] = (
+                max(0.0, (w["eff"] - self.min_amp) * wpa)
+                if (w["charging"] and w["current"] > self.min_amp) else 0.0
             )
 
-        # Nötige Entlastung auf ladende Wallboxen verteilen
+        # Nötige Entlastung bis knapp unter die Warnschwelle, gleichmäßig auf ladende Wallboxen verteilt
         if self.calc_reduction:
-            remaining = max(0.0, (power_w - self.above_threshold) * (1 + self.safety_margin / 100))
+            remaining = max(0.0, power_w - (self.above_threshold - self.target_buffer))
             open_wbs = [w for w in wbs if w["cap"] > 0]
             while open_wbs and remaining > 0.5:
                 share = remaining / len(open_wbs)
@@ -419,12 +433,12 @@ class LastspitzeManager:
 
             est_w = max(0.0, (w["eff"] - new_amp) * wpa)
             expected_w += est_w
+            self._throttled_by_us[entity] = new_amp  # vor dem Setzen, damit es nicht als manuell gilt
             await self.hass.services.async_call(
                 "number", "set_value",
                 {"entity_id": entity, "value": new_amp},
                 blocking=True,
             )
-            self._throttled_by_us[entity] = new_amp
             changes.append(f"{entity}: {current} A → {new_amp} A (≈ −{est_w:.0f} W)")
         self._update_sensors()
 
@@ -440,36 +454,81 @@ class LastspitzeManager:
             message += "\nHinweis: Die Wallboxen allein reichen rechnerisch nicht, um unter den Zielwert zu kommen."
         await self._notify("⚠️ Lastspitze über Schwellwert", message)
 
-    async def _async_restore(self) -> None:
+    async def _async_restore(self, power_w: float) -> None:
+        """Ladestrom schrittweise wieder erhöhen, solange der Bezug unter der Warnschwelle bleibt."""
+        wpa = self.voltage * self.phases
+        wbs = [w for w in self._read_wallboxes() if w["entity"] in self._throttled_by_us]
+        if not wbs:
+            return
+
         changes = []
-        for wb in self.wallboxes:
-            amp_entity = wb[CONF_WB_AMP]
-            if amp_entity not in self._throttled_by_us:
-                continue  # von uns nicht gedrosselt (oder Nutzer hat manuell übernommen) -> in Ruhe lassen
-            max_amp_entity = wb[CONF_WB_MAX_AMP]
-            amp_state = self.hass.states.get(amp_entity)
-            max_state = self.hass.states.get(max_amp_entity)
-            try:
-                current_amp = int(float(amp_state.state))
-                max_amp = int(float(max_state.state))
-            except (ValueError, AttributeError, TypeError):
-                continue
-            if current_amp < max_amp:
+        # Nicht ladende Wallboxen belasten das Netz nicht -> direkt auf Maximum zurück
+        charging = []
+        for w in wbs:
+            if not w["charging"] and w["max_amp"] is not None:
+                if w["current"] < w["max_amp"]:
+                    await self.hass.services.async_call(
+                        "number", "set_value",
+                        {"entity_id": w["entity"], "value": w["max_amp"]},
+                        blocking=True,
+                    )
+                    changes.append(f"{w['entity']}: wieder auf Maximum ({w['max_amp']} A)")
+                self._throttled_by_us.pop(w["entity"], None)
+            elif w["max_amp"] is not None:
+                charging.append(w)
+            else:
+                continue  # Maximum unbekannt -> nicht anfassen
+
+        # Spielraum bis knapp unter die Warnschwelle in ganze Ampere umrechnen
+        headroom_w = (self.above_threshold - self.target_buffer) - power_w
+        budget_a = int(max(0.0, headroom_w) // wpa)
+        raised_w = 0.0
+        # reihum je 1 A an die ladenden Wallboxen vergeben (gleichmäßig)
+        while budget_a > 0:
+            candidates = [w for w in charging if w["current"] < w["max_amp"]]
+            if not candidates:
+                break
+            for w in candidates:
+                if budget_a <= 0:
+                    break
+                w["current"] += 1
+                w["raised"] = w.get("raised", 0) + 1
+                budget_a -= 1
+
+        for w in charging:
+            entity = w["entity"]
+            orig = self._throttled_by_us.get(entity)
+            if w.get("raised"):
+                new_amp = w["current"]
+                self._throttled_by_us[entity] = new_amp  # vor dem Setzen, damit es nicht als manuell gilt
                 await self.hass.services.async_call(
                     "number", "set_value",
-                    {"entity_id": amp_entity, "value": max_amp},
+                    {"entity_id": entity, "value": new_amp},
                     blocking=True,
                 )
-                changes.append(f"{amp_entity}: wieder auf Maximum ({max_amp} A)")
-            self._throttled_by_us.pop(amp_entity, None)
-        self._update_sensors()
+                raised_w += w["raised"] * wpa
+                changes.append(f"{entity}: {new_amp - w['raised']} A → {new_amp} A")
+                if new_amp >= w["max_amp"]:
+                    self._throttled_by_us.pop(entity, None)  # wieder am Maximum
+            elif w["current"] >= w["max_amp"]:
+                self._throttled_by_us.pop(entity, None)  # schon am Maximum
 
-        if changes:
-            await self._notify(
-                "✅ Lastspitze vorbei",
-                f"Verbrauch seit {self.below_duration // 60} Min unter "
-                f"{self.below_threshold / 1000:.1f} kW.\n" + "\n".join(changes),
-            )
+        self._update_sensors()
+        if not changes:
+            return  # kein Spielraum für +1 A: nichts ändern, nichts melden
+
+        still_throttled = any(w["entity"] in self._throttled_by_us for w in wbs)
+        if still_throttled:
+            title = "↗️ Ladestrom schrittweise erhöht"
+            tail = f"\nNetzbezug {power_w:.0f} W, Spielraum bis Warnschwelle ≈ {max(0.0, headroom_w):.0f} W."
+        else:
+            title = "✅ Lastspitze vorbei"
+            tail = ""
+        await self._notify(
+            title,
+            f"Verbrauch seit {self.below_duration // 60} Min unter "
+            f"{self.below_threshold / 1000:.1f} kW.\n" + "\n".join(changes) + tail,
+        )
 
     def _find_top_consumer(self) -> str:
         best_name, best_val = "unbekannt", -1.0

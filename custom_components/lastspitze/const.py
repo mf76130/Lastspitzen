@@ -20,7 +20,7 @@ CONF_REDUCE_STEP = "reduce_step_a"
 CONF_CALC_REDUCTION = "calc_reduction"
 CONF_PHASES = "charging_phases"
 CONF_VOLTAGE = "voltage_v"
-CONF_SAFETY_MARGIN = "safety_margin_pct"
+CONF_TARGET_BUFFER = "target_buffer_w"
 CONF_CHARGING_STATES = "charging_states"
 CONF_IDLE_STATES = "idle_states"
 CONF_IGNORE_KEYWORDS = "ignore_keywords"
@@ -39,7 +39,8 @@ DEFAULT_REDUCE_STEP = 2
 DEFAULT_CALC_REDUCTION = True
 DEFAULT_PHASES = 3
 DEFAULT_VOLTAGE = 230
-DEFAULT_SAFETY_MARGIN = 10
+# Abstand unter der Warnschwelle (W), auf den geregelt wird
+DEFAULT_TARGET_BUFFER = 100
 # Status-Werte (klein geschrieben, kommagetrennt), die "Wallbox lädt gerade" bedeuten
 DEFAULT_CHARGING_STATES = "charging,laden,lädt,ladend,on,true,in use"
 # Status-Werte, die sicher "lädt nicht" bedeuten. Alles Unbekannte wird als ladend behandelt (lieber drosseln als nichts tun).

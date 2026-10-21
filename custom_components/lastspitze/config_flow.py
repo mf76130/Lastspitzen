@@ -35,7 +35,7 @@ from .const import (
     CONF_CALC_REDUCTION,
     CONF_PHASES,
     CONF_VOLTAGE,
-    CONF_SAFETY_MARGIN,
+    CONF_TARGET_BUFFER,
     CONF_CHARGING_STATES,
     CONF_IDLE_STATES,
     CONF_IGNORE_KEYWORDS,
@@ -53,7 +53,7 @@ from .const import (
     DEFAULT_CALC_REDUCTION,
     DEFAULT_PHASES,
     DEFAULT_VOLTAGE,
-    DEFAULT_SAFETY_MARGIN,
+    DEFAULT_TARGET_BUFFER,
     DEFAULT_CHARGING_STATES,
     DEFAULT_IDLE_STATES,
     DEFAULT_IGNORE_KEYWORDS,
@@ -147,10 +147,10 @@ def _wallbox_count_schema(defaults: dict) -> vol.Schema:
                 NumberSelectorConfig(min=100, max=260, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="V")
             ),
             vol.Required(
-                CONF_SAFETY_MARGIN,
-                default=defaults.get(CONF_SAFETY_MARGIN, DEFAULT_SAFETY_MARGIN),
+                CONF_TARGET_BUFFER,
+                default=defaults.get(CONF_TARGET_BUFFER, DEFAULT_TARGET_BUFFER),
             ): NumberSelector(
-                NumberSelectorConfig(min=0, max=50, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="%")
+                NumberSelectorConfig(min=0, max=2000, step=50, mode=NumberSelectorMode.BOX, unit_of_measurement="W")
             ),
             vol.Optional(
                 CONF_CHARGING_STATES,

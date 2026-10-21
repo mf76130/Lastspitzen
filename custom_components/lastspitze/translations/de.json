@@ -27,9 +27,9 @@
           "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
-          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
           "charging_states": "Status-Werte für „lädt“ (kommagetrennt)",
-          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)"
+          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)",
+          "target_buffer_w": "Abstand unter der Warnschwelle, auf den geregelt wird (W)"
         }
       },
       "wallboxes": {
@@ -108,9 +108,9 @@
           "calc_reduction": "Reduktion berechnen (sofort unter Warnschwelle)",
           "charging_phases": "Ladephasen der Wallbox (1 oder 3)",
           "voltage_v": "Netzspannung pro Phase (V)",
-          "safety_margin_pct": "Sicherheitsaufschlag auf die Reduktion (%)",
           "charging_states": "Status-Werte für „lädt“ (kommagetrennt)",
-          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)"
+          "idle_states": "Status-Werte für „lädt nicht“ (kommagetrennt)",
+          "target_buffer_w": "Abstand unter der Warnschwelle, auf den geregelt wird (W)"
         }
       },
       "wallboxes": {

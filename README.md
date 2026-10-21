@@ -32,14 +32,27 @@ das Icon erscheint automatisch, sobald diese Version installiert ist.
 ## Berechnete Reduktion
 
 Ist **„Reduktion berechnen"** aktiv (Standard), senkt die Integration den Ladestrom nicht um
-einen festen Schritt, sondern um so viele Ampere, dass der Gesamtbezug rechnerisch unter die
+einen festen Schritt, sondern um so viele Ampere, dass der Gesamtbezug rechnerisch knapp unter die
 Warnschwelle fällt:
 
-`Überschuss (W) = Bezug − Warnschwelle` → `Ampere = Überschuss ÷ (Spannung × Phasen)`
+`Überschuss (W) = Bezug − (Warnschwelle − Abstand)` → `Ampere = Überschuss ÷ (Spannung × Phasen)`
 
-Bei mehreren Wallboxen wird die nötige Reduktion gleichmäßig verteilt (aufgerundet, mind. 1 A),
-nie unter den minimalen Ladestrom. Ist die Option aus, gilt der feste Reduktionsschritt.
-Hinweis: Die Rechnung geht davon aus, dass die Wallbox tatsächlich den eingestellten Strom zieht.
+Der **Abstand unter der Warnschwelle** (Standard 100 W) ist der einzige Puffer. Wegen der ganzen Ampere wird
+immer abgerundet, der Bezug landet also höchstens etwa 700 W unter dem Ziel. Bei mehreren Wallboxen wird die nötige
+Reduktion gleichmäßig verteilt, nie unter den minimalen Ladestrom. Ist die Option aus, gilt der feste Reduktionsschritt.
+
+## Schrittweise Wiederherstellung
+
+Liegt der Bezug lange genug unter der Rückkehr-Schwelle, springt der Ladestrom **nicht** auf das Maximum, sondern
+wird nur so weit erhöht, wie bis knapp unter die Warnschwelle noch Platz ist:
+
+`Spielraum (W) = (Warnschwelle − Abstand) − aktueller Bezug` → `Ampere = Spielraum ÷ (Spannung × Phasen)` (abgerundet)
+
+Die zusätzlichen Ampere gehen reihum an die ladenden Wallboxen. Reicht der Spielraum nicht für ein weiteres Ampere,
+bleibt alles, wie es ist. Erst wenn der Bezug weiter sinkt, geht es Schritt für Schritt weiter, bis das Maximum erreicht
+ist. So pendelt der Ladestrom nicht mehr zwischen Maximum und Drosselung. Nicht ladende Wallboxen werden direkt auf das
+Maximum zurückgesetzt, da sie das Netz nicht belasten. Jeder Schritt braucht die eingestellte Dauer unter der
+Rückkehr-Schwelle.
 
 ### Leistungssensor pro Wallbox (optional, empfohlen)
 
@@ -47,7 +60,6 @@ Gibst du bei einer Wallbox zusätzlich einen Leistungssensor (W) an, geht die In
 
 - Nur Wallboxen, die gerade laden (> 300 W), werden gedrosselt. Eine Wallbox ohne Fahrzeug bekommt keinen Anteil mehr.
 - Die Reduktion bezieht sich auf den **tatsächlich gezogenen** Strom, nicht auf den eingestellten. Zieht ein Auto nur 8 A bei 16 A Einstellung, bringt eine Senkung von 16 auf 13 A nichts – die Integration rechnet deshalb ab 8 A.
-- Ein **Sicherheitsaufschlag** (Standard 10 %) auf die nötige Entlastung verhindert, dass es knapp nicht reicht.
 - Reichen die Wallboxen rechnerisch nicht aus (z. B. beide schon fast am Minimum), steht das in der Benachrichtigung.
 
 Ohne Leistungssensor gilt wie bisher der eingestellte Strom und alle Wallboxen werden gleich behandelt.
